@@ -20,12 +20,6 @@ $tagsList   = pdoPrepare($sqlCommand);
 $tagsList->execute();
 $tagsList   = $tagsList->fetchAll(PDO::FETCH_COLUMN);
 
-$countClause        = "SELECT COUNT(posts.post_id) FROM posts
-                       LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                       LEFT JOIN tags ON post_tags.tag_id = tags.tag_id";
-$selectClause       = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
-                       LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                       LEFT JOIN tags ON post_tags.tag_id = tags.tag_id";
 $whereAndLikeClause = '';
 $havingClause       = '';
 
@@ -49,19 +43,20 @@ if(!isset($_GET['searchWord']) ||
    ){
     $searchWords       = [];
     $searchWord        = '';
-    $totalArticleCount = pdoPrepare($countClause);
+    $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts";
+    $totalArticleCount = pdoPrepare($sqlCommand);
     $totalArticleCount->execute();
     $totalArticleCount = $totalArticleCount->fetchColumn();
     $totalArticleCount = intval($totalArticleCount);
 
     if($totalArticleCount > 0){
-        $sqlCommand        = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                            LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                            GROUP BY posts.post_id
-                            ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
-        $stmt              = pdoPrepare($sqlCommand);
+        $sqlCommand = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                       LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                       LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                       LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                       GROUP BY posts.post_id
+                       ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
+        $stmt       = pdoPrepare($sqlCommand);
     }
 }
 
@@ -82,14 +77,14 @@ if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     // $isFindTag->fetchColumn() > 0 ? $isFindTag = TRUE : $isFindTag = FALSE;
 
     if($isFindTag){
-        $sqlCommand        = "SELECT COUNT( * ) FROM
-                                (
-                                    SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
-                                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                                    GROUP BY posts.post_id
-                                    HAVING tags LIKE :tag
-                                ) AS tag_count";
+        $sqlCommand = "SELECT COUNT( * ) FROM
+                        (
+                            SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
+                            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                            GROUP BY posts.post_id
+                            HAVING tags LIKE :tag
+                        ) AS tag_count";
         $totalArticleCount = pdoPrepare($sqlCommand);
         $totalArticleCount->bindValue(':tag', '%'. $searchWord. '%', PDO::PARAM_STR);
         $totalArticleCount->execute();
@@ -123,6 +118,8 @@ if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag
     //Keyの再定義
     $searchWords = array_values($searchWords);
 
+    $countClause = "SELECT COUNT(posts.post_id) FROM posts";
+
     for ($i = 0; $i < count($searchWords); $i++) {
         if($i === 0){
             $whereAndLikeClause .= ' WHERE post LIKE :'. strval($i);
@@ -150,6 +147,11 @@ if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag
     $totalArticleCount->execute();
     $totalArticleCount = $totalArticleCount->fetchColumn();
     $totalArticleCount = intval($totalArticleCount);
+
+    $selectClause = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                    LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id";
 
     if($totalArticleCount > 0){
         $sqlCommand  = $selectClause. $whereAndLikeClause. 'GROUP BY posts.post_id ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay';
