@@ -21,7 +21,6 @@ $tagsList->execute();
 $tagsList   = $tagsList->fetchAll(PDO::FETCH_COLUMN);
 
 $whereAndLikeClause = '';
-$havingClause       = '';
 
 //1ページに表示するpostの件数
 $countArticleDisplay = 10;
