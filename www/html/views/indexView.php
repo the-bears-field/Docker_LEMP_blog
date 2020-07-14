@@ -90,7 +90,7 @@
     </div>
     <? endforeach ?>
     <div class="main__paginator paginator">
-        <div class="paginator__nav flex-direction-row"><? echo $paginaterTags ?></div>
+        <div class="paginator__nav flex-direction-row"><? echo $paginatorTags ?></div>
     </div>
 </main>
 <aside class="sidebar right-sidebar">
