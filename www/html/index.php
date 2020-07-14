@@ -164,11 +164,11 @@ if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag
 if($totalArticleCount === 0){
     $searchResultMessage = $searchWord. ' に一致する結果は見つかりませんでした。';
     $result              = [];
-    $paginaterTags       = '';
+    $paginatorTags       = '';
 } else {
     //ページネーションの処理
     //Pagerのオプションを定義
-    $paginaterOptions = [
+    $paginatorOptions = [
         'totalItems'            => $totalArticleCount,
         'mode'                  => 'Sliding',
         'delta'                 => 2,
@@ -189,9 +189,9 @@ if($totalArticleCount === 0){
         'spacesAfterSeparator'  => 0
         ];
 
-    $paginater       = Pager::factory($paginaterOptions);
-    $navigationLink  = $paginater->getLinks();
-    $paginaterTags   = $navigationLink['all'];
+    $paginator       = Pager::factory($paginatorOptions);
+    $navigationLink  = $paginator->getLinks();
+    $paginatorTags   = $navigationLink['all'];
     //ページネーションの処理ここまで
 
     //DBから記事データ取得
