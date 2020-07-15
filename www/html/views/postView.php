@@ -73,7 +73,7 @@
                 <a class="tags__link" href="/?tag=<? echo htmlspecialchars($tag, ENT_QUOTES); ?>"><? echo htmlspecialchars($tag, ENT_QUOTES); ?></a>
                 <? endforeach ?>
             </div>
-            <div class="posts__text margin-top-50px">
+            <div class="posts__text posts__text--post margin-top-50px">
                 <? echo (new HTMLPurifier())->purify($result['post'])."\n"; ?>
             </div>
         </article>

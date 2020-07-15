@@ -457,6 +457,10 @@
         word-wrap: break-word;
     }
 
+    .posts__text--post {
+        margin-bottom: 66px;
+    }
+
     .posts__button-wrapper {
         justify-content: space-around;
         margin-top: 50px;
