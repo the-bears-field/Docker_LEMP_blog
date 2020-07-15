@@ -102,7 +102,7 @@
     </div>
     <div class="sidebar__inner right-sidebar__inner flex-direction-column">
         <h2 class="sidebar__caption">タグ一覧</h2>
-        <div class="sidebar__tags flex-direction-row">
+        <div class="sidebar__tags">
             <? foreach($tagsList as $tag) : ?>
             <a class="sidebar__tags-item" href="/?tag=<? echo $tag?>"><? echo $tag; ?></a>
             <? endforeach ?>

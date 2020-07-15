@@ -165,7 +165,6 @@
         padding: 16px 15px;
     }
 
-    /* 設計をもっとしっかり */
     .input-wrapper {
         background-color: #fff;
         border: 1px solid gray;
@@ -354,6 +353,8 @@
     .sidebar__tags {
         align-content: space-around;
         align-items: baseline;
+        display: flex;
+        flex-direction: row;
         flex-wrap: wrap;
     }
 
@@ -545,7 +546,6 @@
         border-radius: 2em;
         color: ghostwhite;
         display: block;
-        height: 20px;
         margin: 10px 10px 0 0;
         padding: 0.3em 1em;
         /* margin: 2px 4px; */
