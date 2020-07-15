@@ -470,6 +470,7 @@ $(document).ready(function(){
                 if(result['accept'] === true){
                     $('.message-box__content').append(result["messageBoxContent"]);
                     $('.settings__warning-message').hide();
+                    $('body').addClass('fixed');
                     $('.message-box').fadeIn(500);
                 } else {
                     failedMessage = 'パスワードが違います。'
