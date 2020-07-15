@@ -161,8 +161,11 @@ if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag
         }
     }
 }
-
-if($totalArticleCount === 0){
+if($totalArticleCount === 0 && $searchWord === ''){
+    $searchResultMessage = 'まだ投稿されていません。';
+    $result              = [];
+    $paginatorTags       = '';
+} elseif($totalArticleCount === 0) {
     $searchResultMessage = $searchWord. ' に一致する結果は見つかりませんでした。';
     $result              = [];
     $paginatorTags       = '';
