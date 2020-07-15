@@ -15,6 +15,7 @@ date_default_timezone_set('Asia/Tokyo');
 $token = sha1(uniqid(random_bytes(16), true));
 $_SESSION['token'] = $token;
 
+//タグ一覧取得
 $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
 $tagsList   = pdoPrepare($sqlCommand);
 $tagsList->execute();

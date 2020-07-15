@@ -80,20 +80,24 @@
         </article>
     </div>
 </main>
-<div class="sidebar right-sidebar">
+<aside class="sidebar right-sidebar">
     <div class="sidebar__inner right-sidebar__inner">
-        <form class="search flex-direction-row" method="get" action="index.php">
-            <input type="hidden" name="token" value="<? echo $token ?>">
-            <input type="search" class="search__input" name="searchWord" placeholder="検索">
-            <button class="search__button" type="submit"><i class="fas fa-search"></i></button>
+        <form class="sidebar__search search flex-direction-row" method="get" action="/">
+            <input type="search" class="search__input" name="searchWord" placeholder="ブログ内で検索">
+            <button class="search__button fas fa-search" type="submit"></button>
         </form>
     </div>
-</div>
+    <div class="sidebar__inner right-sidebar__inner flex-direction-column">
+        <h2 class="sidebar__caption">タグ一覧</h2>
+        <div class="sidebar__tags">
+            <? foreach($tagsList as $tag) : ?>
+            <a class="sidebar__tags-item" href="/?tag=<? echo $tag?>"><? echo $tag; ?></a>
+            <? endforeach ?>
+        </div>
+    </div>
+</aside>
 <footer class="footer">
     <p class="footer__copyright">copyright 2019 Satoshi Kumano</p>
 </footer>
-<!-- <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
-<script src="./assets/javascripts/like_button.js"></script> -->
 </body>
 </html>
