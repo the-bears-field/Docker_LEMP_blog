@@ -76,7 +76,6 @@
             <div class="posts__text margin-top-50px">
                 <? echo (new HTMLPurifier())->purify($result['post'])."\n"; ?>
             </div>
-            <div id="like_button_container"></div>
         </article>
     </div>
 </main>
