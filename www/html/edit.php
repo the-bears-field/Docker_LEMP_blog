@@ -20,6 +20,11 @@ function trimmingWords($string)
     return $string;
 }
 
+if (!isset($_POST['posting'])) {
+    $token = sha1(uniqid(random_bytes(16), true));
+    $_SESSION['token'] = $token;
+}
+
 if (isset($_GET['postID'])) {
     $postID = intval($_GET['postID']);
     $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, GROUP_CONCAT(tags.tag_name SEPARATOR ' ') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
@@ -42,11 +47,6 @@ if (isset($_GET['postID'])) {
 if (!isset($_GET['postID']) || $stmt['user_id'] !== $_SESSION['id']) {
     header('location: /');
     exit();
-}
-
-if (!isset($_POST['posting'])) {
-    $token = sha1(uniqid(random_bytes(16), true));
-    $_SESSION['token'] = $token;
 }
 
 if (isset($_POST['posting'])) {
