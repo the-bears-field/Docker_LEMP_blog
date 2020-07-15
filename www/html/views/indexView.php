@@ -95,15 +95,18 @@
 </main>
 <aside class="sidebar right-sidebar">
     <div class="sidebar__inner right-sidebar__inner">
-        <form class="search flex-direction-row" method="get" action="/">
+        <form class="sidebar__search search flex-direction-row" method="get" action="/">
             <input type="search" class="search__input" name="searchWord" placeholder="ブログ内で検索">
             <button class="search__button fas fa-search" type="submit"></button>
         </form>
     </div>
     <div class="sidebar__inner right-sidebar__inner flex-direction-column">
-        <? foreach($tagsList as $tag) : ?>
-        <a href="/?tag=<? echo $tag?>"><? echo $tag; ?></a>
-        <? endforeach ?>
+        <h2 class="sidebar__caption">タグ一覧</h2>
+        <div class="sidebar__tags flex-direction-row">
+            <? foreach($tagsList as $tag) : ?>
+            <a class="sidebar__tags-item" href="/?tag=<? echo $tag?>"><? echo $tag; ?></a>
+            <? endforeach ?>
+        </div>
     </div>
 </aside>
 <footer class="footer">

@@ -335,8 +335,8 @@
     }
 
     .right-sidebar__inner {
-        width: 200px;
         margin: 50px auto 0 1vw;
+        width: 200px;
     }
 
     .left-sidebar__inner {
@@ -344,11 +344,27 @@
         margin: 0;
     }
 
-    .search {
+    .sidebar__search {
         flex-wrap: nowrap;
         justify-content: flex-start;
         margin-right: 50px;
         width: 20vw;
+    }
+
+    .sidebar__tags {
+        align-content: space-around;
+        align-items: baseline;
+        flex-wrap: wrap;
+    }
+
+    .sidebar__tags-item {
+        background-color: #180614;
+        border-radius: 2em;
+        color: ghostwhite;
+        display: inline-block;
+        font-size: 14px;
+        margin: 10px 10px 0 0;
+        padding: 0.3em 1em;
     }
 
     .search__input {
