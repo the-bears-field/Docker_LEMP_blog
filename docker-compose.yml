@@ -36,3 +36,10 @@ services:
          - 8888:80
       depends_on:
          - db
+
+   composer:
+      image: composer:2.0
+      working_dir: /var/www/html
+      volumes:
+         - ./www/html:/var/www/html
+      command: composer update
