@@ -1,7 +1,7 @@
 @charset "utf-8";
 
 @media screen and (min-width: 481px) and (max-width: 768px){
-    body {
+        body {
         display: grid;
         font-family: sans-serif;
         grid-template-rows: 60px auto;

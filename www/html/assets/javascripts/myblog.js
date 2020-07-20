@@ -366,7 +366,7 @@ $(document).ready(function(){
                 $('.main__default-message').css('display', 'none');
                 $('.main').children('.main__settings').remove();
                 $('.main').append(result);
-                if (innerWidth < 480) {
+                if (innerWidth < 769) {
                     $('.sidebar').hide();
                 }
             }).fail(function () {
@@ -393,7 +393,7 @@ $(document).ready(function(){
 
         $('.main').on('click', '.settings__back', function () {
             $('.main').children('.main__settings').remove();
-            if (innerWidth < 480) {
+            if (innerWidth < 769) {
                 $('.sidebar').show();
             } else {
                 $('.main').children('.main__default-message').show();
