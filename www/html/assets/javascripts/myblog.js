@@ -79,7 +79,7 @@ $(document).ready(function(){
 
     //メニューを開いている最中にウインドウサイズが変更になった時の処理
     $(window).resize(function () {
-        if (window.matchMedia('(min-width:961px)').matches) {
+        if (window.matchMedia('(min-width:769px)').matches) {
             // 処理...
             $('body').removeClass('fixed');
             $('.header__nav').find('.header__nav-line').removeClass('open-header-menu');
@@ -89,7 +89,7 @@ $(document).ready(function(){
             headerMenuToggleState = false;
         }
 
-        if (window.matchMedia('(max-width:960px)').matches) {
+        if (window.matchMedia('(max-width:770px)').matches) {
             $('.header__menu').hide();
             headerMenuToggleState = false;
         }

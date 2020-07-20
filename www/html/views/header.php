@@ -3,6 +3,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=Edge">
 <link rel="stylesheet" href="/assets/stylesheets/normalize.css">
 <link rel="stylesheet" href="/assets/stylesheets/styles.css">
+<link rel="stylesheet" href="/assets/stylesheets/styles-tb.css">
 <link rel="stylesheet" href="/assets/stylesheets/styles-sp.css">
 <link rel="stylesheet" href="./assets/javascripts/trumbowyg/dist/ui/trumbowyg.min.css">
 <link rel="stylesheet" href="./assets/stylesheets/fontawesome.css">
