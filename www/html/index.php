@@ -1,6 +1,4 @@
 <?php
-// namespace myblog\index;
-
 require_once __DIR__. '/authenticateFunctions.php';
 require_once __DIR__. '/databaseConnection.php';
 require_once __DIR__. '/vendor/autoload.php';
@@ -12,8 +10,18 @@ require_once __DIR__. '/vendor/autoload.php';
 
 date_default_timezone_set('Asia/Tokyo');
 
-$token = sha1(uniqid(random_bytes(16), true));
-$_SESSION['token'] = $token;
+/*
+2020/07/21
+トークンを用いたcsrf対策をしていたところ、
+Google Chromeにおいて、勝手に$_SESSION['token']の値が変わる不具合が発覚。
+
+2020/07/28
+Chrome Loggerを導入し調査した結果、
+どのページにアクセスしてもindex.phpが読み込まれていた。
+
+2020/07/31
+nginxのconfファイルを書き換えることで対応。
+*/
 
 //タグ一覧取得
 $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
