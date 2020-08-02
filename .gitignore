@@ -75,3 +75,5 @@ typings/
 # test.php
 /www/html/test.php
 
+# ChromePhp.php
+/www/html/ChromePhp.php
