@@ -102,7 +102,7 @@ END $$
 DELIMITER ;
 
 # userデータ挿入
-INSERT INTO user(name, email, password) VALUES('test-user', 'test@test.com', '$2y$10$KSxv6HgNfjTdbP7P/KbGXeKQ4FzXvlPhSDekqJhpsdU0DAIpaR64G');
+INSERT INTO user(name, email, password) VALUES('test-user', 'test@example.com', '$2y$10$KSxv6HgNfjTdbP7P/KbGXeKQ4FzXvlPhSDekqJhpsdU0DAIpaR64G');
 
 # postデータ挿入
 INSERT INTO posts(title, post) VALUES('test1', 'test1');
