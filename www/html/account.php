@@ -23,6 +23,7 @@ if (isset($_POST['sending'])) {
     }
 
     $userId = $_SESSION['id'];
+    $updatedAt   = (new Datetime())->format('Y-m-d H:i:s');
 
     //ユーザー名変更
     if (isset($_POST['username']) && isset($_POST['username']) !== $_SESSION['name']) {
@@ -30,14 +31,15 @@ if (isset($_POST['sending'])) {
 
         try {
             $pdo  = (new DatabaseConnection())->getPdo();
-            $stmt = $pdo->prepare("UPDATE user SET name = :userName WHERE user_id = :userId");
+            $stmt = $pdo->prepare("UPDATE user SET name = :userName, updated_at = :updated_at WHERE user_id = :userId");
             $stmt->bindValue(':userName', $userName, PDO::PARAM_STR);
+            $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
             $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
             $stmt->execute();
             $pdo  = null;
             $_SESSION['name'] = $userName;
         } catch (PDOException $e) {
-
+            console.log($e);
         }
     }
 
@@ -58,13 +60,13 @@ if (isset($_POST['sending'])) {
 
         if (password_verify($password, $correntPassword)) {
             try {
-                $stmt = $pdo->prepare("UPDATE user SET email = :email WHERE user_id = :userId");
+                $stmt = $pdo->prepare("UPDATE user SET email = :email, updated_at = :updated_at WHERE user_id = :userId");
                 $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+                $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
                 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
                 $stmt->execute();
                 $pdo  = null;
                 $_SESSION['email'] = $email;
-
             } catch (PDOException $e) {
                 console.log($e);
             }
@@ -93,8 +95,9 @@ if (isset($_POST['sending'])) {
 
         if (password_verify($password, $correntPassword)) {
             try {
-                $stmt = $pdo->prepare("UPDATE user SET password = :password WHERE user_id = :userId");
+                $stmt = $pdo->prepare("UPDATE user SET password = :password, updated_at = :updated_at WHERE user_id = :userId");
                 $stmt->bindValue(':password', password_hash($newPassword, PASSWORD_DEFAULT), PDO::PARAM_STR);
+                $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
                 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
                 $stmt->execute();
                 $pdo  = null;
