@@ -28,6 +28,7 @@ services:
       volumes:
          - ./mysql/initdb.d:/docker-entrypoint-initdb.d
       environment:
+         TZ: Asia/Tokyo
          MYSQL_ROOT_PASSWORD: secret
 
    phpmyadmin:
