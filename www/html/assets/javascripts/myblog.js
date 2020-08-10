@@ -480,7 +480,19 @@ $(document).ready(function(){
         });
     }
 
+    /**************************************** login.php ****************************************/
     if (document.URL.match(/login.php/)) {
+        $(document).ready(function(){
+            let emailInputValue       = $(".unlogged-user-form").children().find(".input-wrapper__input").val();
+            let passwordInputValue    = $(".unlogged-user-form").children().next().find(".input-wrapper__input").val();
+            let sendButton            = $(".unlogged-user-form").find(".button");
+            let verificationEmpties   = [emailInputValue, passwordInputValue];
+            let verificationPasswords = [passwordInputValue];
+            let verficationEmails     = [emailInputValue];
+            let isEnabled             = verificationInputValue(verificationEmpties, verificationPasswords,verficationEmails);
+            toggleSendButton(isEnabled, sendButton);
+        });
+
         $('.main').on('input', '.input-wrapper__input', function() {
             let emailInputValue        = $(this).parents('.unlogged-user-form').children().find('.input-wrapper__input').val();
             let passwordInputValue     = $(this).parents('.unlogged-user-form').children().next().find('.input-wrapper__input').val();
