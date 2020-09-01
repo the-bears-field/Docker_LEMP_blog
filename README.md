@@ -19,6 +19,15 @@
 - Docker
 - Docker Compose
 
+## 使用技術
+- PHP 7.3.21 (cli)
+- MYSQL Ver 14.14 Distrib 5.7.31, for Linux(x86_64)
+- Javascript
+- jQuery v3.3.1
+- nginx/1.19.1
+- Docker version 19.03.12
+- Docker Compose version 1.26.2
+
 ## インストール
 
 ```
