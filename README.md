@@ -1,6 +1,6 @@
 # Docker LEMP blog
 
-生のPHPを使用しブログを作成しました。
+生のPHPを使用しブログを作成しました。  
 1つのブログを複数ユーザーが投稿、管理を行うことを想定しています。
 
 ## 機能
@@ -28,5 +28,5 @@ $ docker-compose up -d
 ```
 
 ## 作者
-Satoshi Kumano
+Satoshi Kumano  
 mail to: thebearsfield@mail.com
