@@ -28,6 +28,7 @@
 - Docker version 19.03.12
 - Docker Compose version 1.26.2
 - CSS(設計規則にBEMを採用)
+- Git version 2.21.0
 
 ## インストール
 
