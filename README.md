@@ -40,7 +40,7 @@ $ docker-compose up -d
 ```
 
 ## テスト用アカウント情報
-- mail:     test@example.com
+- mail:     `test@example.com`
 - password: 12345678
 
 ## 作者
