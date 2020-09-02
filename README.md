@@ -39,6 +39,10 @@ $ docker-compose build --no-cache
 $ docker-compose up -d
 ```
 
+## テスト用アカウント情報
+- mail:     test@example.com
+- password: 12345678
+
 ## 作者
 Satoshi Kumano  
 mail to: thebearsfield@mail.com
