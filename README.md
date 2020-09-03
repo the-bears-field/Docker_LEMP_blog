@@ -46,6 +46,10 @@ $ docker-compose up -d
 mail: test@example.com
 password: 12345678
 ```
+
+## 開発機材
+MacBook Pro (Retina, 15-inch, Late 2013) US Keyboard
+
 ## 作者
 Satoshi Kumano  
 mail to: thebearsfield@mail.com
