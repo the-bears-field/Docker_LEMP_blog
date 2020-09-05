@@ -4,6 +4,8 @@
         "lampager/lampager": "^0.4.0",
         "pear/pager": "^2.5",
         "phpmailer/phpmailer": "^6.1",
-        "phpunit/phpunit": "^9.2"
+        "phpunit/phpunit": "^9.2",
+        "vlucas/phpdotenv": "^5.1.0",
+        "monolog/monolog": "^2.1.1"
     }
 }
