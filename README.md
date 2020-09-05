@@ -52,4 +52,4 @@ MacBook Pro (Retina, 15-inch, Late 2013) US Keyboard
 
 ## 作者
 Satoshi Kumano  
-mail to: thebearsfield@mail.com
+mail to: thebearsfield@gmail.com
