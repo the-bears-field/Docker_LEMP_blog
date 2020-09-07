@@ -42,11 +42,22 @@ if (isset($_POST['signup'])) {
         $warningMessages[] = "パスワードの文字数が短すぎます。";
     }
 
+    $pdo  = (new DatabaseConnection())->getPdo();
+    $stmt = $pdo->prepare("SELECT email FROM user WHERE email = :email");
+    $stmt->bindValue(":email", $_POST["email"], PDO::PARAM_STR);
+    $stmt->execute();
+    $registeredUser = $stmt->fetch();
+
+    if($registeredUser){
+        $warningMessages[] = "すでに登録済みです。";
+    }
+
     if ($_POST["username"]
      && $_POST["password"]
      && $_POST["password2"]
      && $_POST["password"] === $_POST["password2"]
-     && mb_strlen($_POST["password"]) >= 8)
+     && mb_strlen($_POST["password"]) >= 8
+     && !$registeredUser)
      {
         $username          = $_POST["username"];
         $email             = $_POST["email"];
