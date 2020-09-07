@@ -27,15 +27,23 @@ if (basename($_SERVER['SCRIPT_NAME']) == basename(__FILE__)) {
     </div>
 </header>
 <main class="main main--no-sidebar">
-    <? if(isset($_POST['signup']) && !isset($errorMessages)) : ?>
+    <? if(isset($_POST['signup']) && !$warningMessages && !$errorMessages) : ?>
     <div class="flex-direction-column">
         <p>send it</p>
+        <p><? echo htmlspecialchars($mailSubject, ENT_QUOTES) ?></p>
+        <p><? echo htmlspecialchars($username, ENT_QUOTES) ?>様</p>
+        <p>本ブログにご登録頂きありがとうございます。<br>24時間以内に下記アドレスへアクセスし、登録を完了して下さい。</p>
+        <a href="<? echo htmlspecialchars($authenticationURL, ENT_QUOTES) ?>"><? echo htmlspecialchars($authenticationURL, ENT_QUOTES) ?></a>
     </div>
+    <? elseif($errorMessages) :?>
+        <? foreach($errorMessages as $errorMessage) : ?>
+            <p><? echo htmlspecialchars($errorMessage, ENT_QUOTES); ?></p>
+        <? endforeach ?>
     <? else : ?>
     <div class="unlogged-user-form-div">
         <h1 class="unlogged-user-form-title">新規登録画面</h1>
-        <? foreach($errorMessages as $errorMessage) : ?>
-            <div class="error-message" style="color: #ff0000;"><? echo htmlspecialchars($errorMessage, ENT_QUOTES); ?></div>
+        <? foreach($warningMessages as $warningMessage) : ?>
+            <div class="error-message" style="color: #ff0000;"><? echo htmlspecialchars($warningMessage, ENT_QUOTES); ?></div>
         <? endforeach ?>
         <form class="unlogged-user-form flex-direction-column" name="unlogged-user-form" action="signup.php" method="POST">
             <div class="flex-direction-row input-wrapper">
