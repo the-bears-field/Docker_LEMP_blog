@@ -34,12 +34,12 @@ if (basename($_SERVER['SCRIPT_NAME']) == basename(__FILE__)) {
         <form class="unlogged-user-form flex-direction-column" name="unlogged-user-form" action="login.php" method="POST">
             <div class="flex-direction-row input-wrapper">
                 <div class="input-wrapper__label">
-                    <input type="text" class="input-wrapper__input" name="email" placeholder="Email" value="<?php if (isset($_POST['email'])) {echo htmlspecialchars($_POST['email'], ENT_QUOTES);} ?>">
+                    <input type="text" class="input-wrapper__input" name="email" placeholder="Email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email'], ENT_QUOTES) : "test@example.com"; ?>">
                 </div>
             </div>
             <div class="flex-direction-row input-wrapper border-top-none">
                 <div class="input-wrapper__label">
-                    <input class="input-wrapper__input" type="password" name="password" placeholder="password">
+                    <input class="input-wrapper__input" type="password" name="password" placeholder="password" value="12345678">
                 </div>
                 <span class="password-toggle-icon">
                     <i class="fas fa-eye"></i>
