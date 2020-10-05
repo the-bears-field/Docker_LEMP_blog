@@ -24,10 +24,7 @@ nginxのconfファイルを書き換えることで対応。
 */
 
 //タグ一覧取得
-$sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
-$tagsList   = pdoPrepare($sqlCommand);
-$tagsList->execute();
-$tagsList   = $tagsList->fetchAll(PDO::FETCH_COLUMN);
+$tagsList = (new DisplayAllTagsInIndex)->selectCommand();
 
 $whereAndLikeClause = '';
 
