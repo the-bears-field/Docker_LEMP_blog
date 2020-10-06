@@ -66,7 +66,7 @@ class DisplayAllTags extends DBConnection implements ISelect
 }
 
 
-abstract class DisplayPostsInIndex extends DBConnection
+abstract class DisplayPostsOnIndex extends DBConnection
 {
     protected $beginArticleDisplay;
     protected $countArticleDisplay;
@@ -94,7 +94,7 @@ abstract class DisplayPostsInIndex extends DBConnection
     }
 }
 
-class DisplayPostsInIndexNormalProcess extends DisplayPostsInIndex implements ISelect
+class DisplayPostsOnIndexByNomalProcess extends DisplayPostsOnIndex implements ISelect
 {
     function selectCommand() {
         $pdo = $this->getPdo();
@@ -115,7 +115,7 @@ class DisplayPostsInIndexNormalProcess extends DisplayPostsInIndex implements IS
     }
 }
 
-class DisplayPostsInIndexTagSearchProcess extends DisplayPostsInIndex implements ISelect
+class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implements ISelect
 {
     private $tag;
 
@@ -174,7 +174,7 @@ class DisplayPostsInIndexTagSearchProcess extends DisplayPostsInIndex implements
     }
 }
 
-class DisplayPostsInIndexWordsSearchProcess extends DisplayPostsInIndex implements ISelect
+class DisplayPostsOnIndexWordsSearchProcess extends DisplayPostsOnIndex implements ISelect
 {
     function selectCommand() {
 

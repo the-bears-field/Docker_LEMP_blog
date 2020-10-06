@@ -44,24 +44,24 @@ if($pageID > 1){
 if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
     $searchWords       = [];
     $searchWord        = '';
-    $displayPostsInIndex = new DisplayPostsInIndexNormalProcess();
-    $displayPostsInIndex->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPostsInIndex->setCountArticleDisplay($countArticleDisplay);
-    $displayPostsInIndex->setTotalArticleCount();
-    $result = $displayPostsInIndex->selectCommand();
-    $totalArticleCount = $displayPostsInIndex->getTotalArticleCount();
+    $DisplayPosts = new DisplayPostsOnIndexByNomalProcess();
+    $DisplayPosts->setBeginArticleDisplay($beginArticleDisplay);
+    $DisplayPosts->setCountArticleDisplay($countArticleDisplay);
+    $DisplayPosts->setTotalArticleCount();
+    $result = $DisplayPosts->selectCommand();
+    $totalArticleCount = $DisplayPosts->getTotalArticleCount();
 }
 
 //タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord = $_GET['tag'];
-    $displayPostsInIndex = new DisplayPostsInIndexTagSearchProcess();
-    $displayPostsInIndex->setTag($searchWord);
-    $displayPostsInIndex->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPostsInIndex->setCountArticleDisplay($countArticleDisplay);
-    $displayPostsInIndex->setTotalArticleCount();
-    $result = $displayPostsInIndex->selectCommand();
-    $totalArticleCount = $displayPostsInIndex->getTotalArticleCount();
+    $DisplayPosts = new DisplayPostsOnIndexByTagSearchProcess();
+    $DisplayPosts->setTag($searchWord);
+    $DisplayPosts->setBeginArticleDisplay($beginArticleDisplay);
+    $DisplayPosts->setCountArticleDisplay($countArticleDisplay);
+    $DisplayPosts->setTotalArticleCount();
+    $result = $DisplayPosts->selectCommand();
+    $totalArticleCount = $DisplayPosts->getTotalArticleCount();
 }
 
 //検索した時の処理
