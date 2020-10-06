@@ -24,7 +24,7 @@ nginxのconfファイルを書き換えることで対応。
 */
 
 //タグ一覧取得
-$tagsList = (new DisplayAllTagsInIndex)->selectCommand();
+$tagsList = (new DisplayAllTags)->selectCommand();
 
 $whereAndLikeClause = '';
 
@@ -41,75 +41,27 @@ if($pageID > 1){
 }
 
 //通常処理
-if(!isset($_GET['searchWord']) ||
-   !isset($_GET['tag']) ||
-   $_GET['searchWord'] === '' ||
-   (isset($_GET['searchWord']) && isset($_GET['tag']))
-   ){
+if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
     $searchWords       = [];
     $searchWord        = '';
-    $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts";
-    $totalArticleCount = pdoPrepare($sqlCommand);
-    $totalArticleCount->execute();
-    $totalArticleCount = $totalArticleCount->fetchColumn();
-    $totalArticleCount = intval($totalArticleCount);
-
-    if($totalArticleCount > 0){
-        $sqlCommand = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                       LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                       LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                       LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                       GROUP BY posts.post_id
-                       ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
-        $stmt       = pdoPrepare($sqlCommand);
-    }
+    $displayPostsInIndex = new DisplayPostsInIndexNormalProcess();
+    $displayPostsInIndex->setBeginArticleDisplay($beginArticleDisplay);
+    $displayPostsInIndex->setCountArticleDisplay($countArticleDisplay);
+    $displayPostsInIndex->setTotalArticleCount();
+    $result = $displayPostsInIndex->selectCommand();
+    $totalArticleCount = $displayPostsInIndex->getTotalArticleCount();
 }
 
 //タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord = $_GET['tag'];
-    $sqlCommand = "SELECT COUNT( * ) FROM
-                            (
-                                SELECT tags.tag_name FROM post_tags
-                                JOIN tags ON post_tags.tag_id = tags.tag_id
-                                WHERE tag_name = :tag
-                            ) AS is_find_tag";
-
-    $isFindTag = pdoPrepare($sqlCommand);
-    $isFindTag->bindValue(':tag', $searchWord, PDO::PARAM_STR);
-    $isFindTag->execute();
-    $isFindTag = $isFindTag->fetchColumn();
-    // $isFindTag->fetchColumn() > 0 ? $isFindTag = TRUE : $isFindTag = FALSE;
-
-    if($isFindTag){
-        $sqlCommand = "SELECT COUNT( * ) FROM
-                        (
-                            SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
-                            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                            GROUP BY posts.post_id
-                            HAVING tags LIKE :tag
-                        ) AS tag_count";
-        $totalArticleCount = pdoPrepare($sqlCommand);
-        $totalArticleCount->bindValue(':tag', '%'. $searchWord. '%', PDO::PARAM_STR);
-        $totalArticleCount->execute();
-        $totalArticleCount = $totalArticleCount->fetchColumn();
-        $totalArticleCount = intval($totalArticleCount);
-    } else {
-        $totalArticleCount = 0;
-    }
-
-    if($totalArticleCount > 0){
-        $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                        LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                        LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                        LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                        GROUP BY posts.post_id
-                        HAVING tags LIKE :tag
-                        ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
-        $stmt        = pdoPrepare($sqlCommand);
-        $stmt->bindValue(':tag', '%'. $searchWord. '%', PDO::PARAM_STR);
-    }
+    $displayPostsInIndex = new DisplayPostsInIndexTagSearchProcess();
+    $displayPostsInIndex->setTag($searchWord);
+    $displayPostsInIndex->setBeginArticleDisplay($beginArticleDisplay);
+    $displayPostsInIndex->setCountArticleDisplay($countArticleDisplay);
+    $displayPostsInIndex->setTotalArticleCount();
+    $result = $displayPostsInIndex->selectCommand();
+    $totalArticleCount = $displayPostsInIndex->getTotalArticleCount();
 }
 
 //検索した時の処理
@@ -205,10 +157,10 @@ if($totalArticleCount === 0 && $searchWord === ''){
     //ページネーションの処理ここまで
 
     //DBから記事データ取得
-    $stmt->bindValue(':beginArticleDisplay', $beginArticleDisplay, PDO::PARAM_INT);
-    $stmt->bindValue(':countArticleDisplay', $countArticleDisplay, PDO::PARAM_INT);
-    $stmt->execute();
-    $result = $stmt->fetchAll();
+    // $stmt->bindValue(':beginArticleDisplay', $beginArticleDisplay, PDO::PARAM_INT);
+    // $stmt->bindValue(':countArticleDisplay', $countArticleDisplay, PDO::PARAM_INT);
+    // $stmt->execute();
+    // $result = $stmt->fetchAll();
     $stmt   = null;
 
     //DBから取得したデータのうち、"tags"を文字列から配列に変換

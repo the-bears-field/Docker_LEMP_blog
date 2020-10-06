@@ -54,9 +54,8 @@ abstract class DBConnection
 /**
 * indexで使用
 */
-class DisplayAllTagsInIndex extends DBConnection implements ISelect
+class DisplayAllTags extends DBConnection implements ISelect
 {
-
     function selectCommand() {
         $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
         $pdo        = $this->getPdo();
@@ -65,6 +64,123 @@ class DisplayAllTagsInIndex extends DBConnection implements ISelect
         return $tagsList->fetchAll(PDO::FETCH_COLUMN);
     }
 }
+
+
+abstract class DisplayPostsInIndex extends DBConnection
+{
+    protected $beginArticleDisplay;
+    protected $countArticleDisplay;
+    protected $totalArticleCount;
+
+    function setBeginArticleDisplay($beginArticleDisplay) {
+        $this->beginArticleDisplay = $beginArticleDisplay;
+    }
+
+    function setCountArticleDisplay($countArticleDisplay) {
+        $this->countArticleDisplay = $countArticleDisplay;
+    }
+
+    function getTotalArticleCount() {
+        return $this->totalArticleCount;
+    }
+
+    function setTotalArticleCount() {
+        $sqlCommand              = "SELECT COUNT(posts.post_id) FROM posts";
+        $pdo                     = $this->getPdo();
+        $totalArticleCount       = $pdo->prepare($sqlCommand);
+        $totalArticleCount->execute();
+        $totalArticleCount       = $totalArticleCount->fetchColumn();
+        $this->totalArticleCount = intval($totalArticleCount);
+    }
+}
+
+class DisplayPostsInIndexNormalProcess extends DisplayPostsInIndex implements ISelect
+{
+    function selectCommand() {
+        $pdo = $this->getPdo();
+
+        if($this->totalArticleCount > 0){
+            $sqlCommand = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                        LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                        LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                        LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                        GROUP BY posts.post_id
+                        ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
+            $stmt       = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        }
+    }
+}
+
+class DisplayPostsInIndexTagSearchProcess extends DisplayPostsInIndex implements ISelect
+{
+    private $tag;
+
+    function setTag($tag){
+        $this->tag = $tag;
+    }
+
+    function setTotalArticleCount() {
+        $sqlCommand = "SELECT COUNT( * ) FROM (
+                            SELECT tags.tag_name FROM post_tags
+                            JOIN tags ON post_tags.tag_id = tags.tag_id
+                            WHERE tag_name = :tag
+                        ) AS is_find_tag";
+        $pdo        = $this->getPdo();
+        $isFindTag  = $pdo->prepare($sqlCommand);
+        $isFindTag->bindValue(':tag', $this->tag, PDO::PARAM_STR);
+        $isFindTag->execute();
+        $isFindTag  = $isFindTag->fetchColumn();
+
+        if(!$isFindTag){
+            $this->totalArticleCount = 0;
+        } else {
+            $sqlCommand = "SELECT COUNT( * ) FROM (
+                                SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
+                                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                                GROUP BY posts.post_id
+                                HAVING tags LIKE :tag
+                            ) AS tag_count";
+            $totalArticleCount       = $pdo->prepare($sqlCommand);
+            $totalArticleCount->bindValue(':tag', '%'. $this->tag. '%', PDO::PARAM_STR);
+            $totalArticleCount->execute();
+            $totalArticleCount       = $totalArticleCount->fetchColumn();
+            $this->totalArticleCount = intval($totalArticleCount);
+        }
+    }
+
+    function selectCommand() {
+        $pdo = $this->getPdo();
+
+        if($this->totalArticleCount > 0 || $this->totalArticleCount){
+            $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                            LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                            GROUP BY posts.post_id
+                            HAVING tags LIKE :tag
+                            ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
+            $stmt        = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':tag', '%'. $this->tag. '%', PDO::PARAM_STR);
+            $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        }
+    }
+}
+
+class DisplayPostsInIndexWordsSearchProcess extends DisplayPostsInIndex implements ISelect
+{
+    function selectCommand() {
+
+    }
+}
+
 
 /**
 * クラス設計が完成し次第、削除予定
