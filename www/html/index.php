@@ -44,30 +44,31 @@ if($pageID > 1){
 if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
     $searchWords       = [];
     $searchWord        = '';
-    $DisplayPosts = new DisplayPostsOnIndexByNomalProcess();
-    $DisplayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $DisplayPosts->setCountArticleDisplay($countArticleDisplay);
-    $DisplayPosts->setTotalArticleCount();
-    $result = $DisplayPosts->selectCommand();
-    $totalArticleCount = $DisplayPosts->getTotalArticleCount();
+    $displayPosts = new DisplayPostsOnIndexByNomalProcess();
+    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
+    $displayPosts->setCountArticleDisplay($countArticleDisplay);
+    $displayPosts->setTotalArticleCount();
+    $result = $displayPosts->selectCommand();
+    $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
 //タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord = $_GET['tag'];
-    $DisplayPosts = new DisplayPostsOnIndexByTagSearchProcess();
-    $DisplayPosts->setTag($searchWord);
-    $DisplayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $DisplayPosts->setCountArticleDisplay($countArticleDisplay);
-    $DisplayPosts->setTotalArticleCount();
-    $result = $DisplayPosts->selectCommand();
-    $totalArticleCount = $DisplayPosts->getTotalArticleCount();
+    $displayPosts = new DisplayPostsOnIndexByTagSearchProcess();
+    $displayPosts->setTag($searchWord);
+    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
+    $displayPosts->setCountArticleDisplay($countArticleDisplay);
+    $displayPosts->setTotalArticleCount();
+    $result = $displayPosts->selectCommand();
+    $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
 //検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
     $searchWord  = $_GET['searchWord'];
     $searchWord  = trimmingSearchWords($searchWord);
+    //文字列を配列に変換
     $searchWords = preg_split('/[\s]/', $searchWord, -1, PREG_SPLIT_NO_EMPTY);
     //配列で重複している物を削除する
     $searchWords = array_unique($searchWords);
@@ -119,6 +120,7 @@ if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag
         }
     }
 }
+
 if($totalArticleCount === 0 && $searchWord === ''){
     $searchResultMessage = 'まだ投稿されていません。';
     $result              = [];
