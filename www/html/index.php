@@ -26,8 +26,6 @@ nginxのconfファイルを書き換えることで対応。
 //タグ一覧取得
 $tagsList = (new DisplayAllTags)->selectCommand();
 
-$whereAndLikeClause = '';
-
 //1ページに表示するpostの件数
 $countArticleDisplay = 10;
 
@@ -40,40 +38,39 @@ if($pageID > 1){
     $beginArticleDisplay = 0;
 }
 
-//通常処理
+// 通常処理
 if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
-    $searchWords       = [];
-    $searchWord        = '';
+    $searchWord   = '';
     $displayPosts = new DisplayPostsOnIndexByNomalProcess();
     $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
     $displayPosts->setCountArticleDisplay($countArticleDisplay);
     $displayPosts->setTotalArticleCount();
-    $result = $displayPosts->selectCommand();
+    $result            = $displayPosts->selectCommand();
     $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
-//タグ検索時の処理
+// タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
-    $searchWord = $_GET['tag'];
+    $searchWord   = $_GET['tag'];
     $displayPosts = new DisplayPostsOnIndexByTagSearchProcess();
     $displayPosts->setTag($searchWord);
     $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
     $displayPosts->setCountArticleDisplay($countArticleDisplay);
     $displayPosts->setTotalArticleCount();
-    $result = $displayPosts->selectCommand();
+    $result            = $displayPosts->selectCommand();
     $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
-//検索した時の処理
+// 検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
-    $searchWord  = $_GET['searchWord'];
+    $searchWord   = $_GET['searchWord'];
     $displayPosts = new DisplayPostsOnIndexByWordsSearchProcess();
     $displayPosts->setSearchWords($searchWord);
     $displayPosts->setWhereAndLikeClause();
     $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
     $displayPosts->setCountArticleDisplay($countArticleDisplay);
     $displayPosts->setTotalArticleCount();
-    $result = $displayPosts->selectCommand();
+    $result            = $displayPosts->selectCommand();
     $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
@@ -109,16 +106,11 @@ if($totalArticleCount === 0 && $searchWord === ''){
         'spacesAfterSeparator'  => 0
         ];
 
-    $paginator       = Pager::factory($paginatorOptions);
-    $navigationLink  = $paginator->getLinks();
-    $paginatorTags   = $navigationLink['all'];
+    $paginator      = Pager::factory($paginatorOptions);
+    $navigationLink = $paginator->getLinks();
+    $paginatorTags  = $navigationLink['all'];
     //ページネーションの処理ここまで
 
-    //DBから記事データ取得
-    // $stmt->bindValue(':beginArticleDisplay', $beginArticleDisplay, PDO::PARAM_INT);
-    // $stmt->bindValue(':countArticleDisplay', $countArticleDisplay, PDO::PARAM_INT);
-    // $stmt->execute();
-    // $result = $stmt->fetchAll();
     $stmt   = null;
 
     //DBから取得したデータのうち、"tags"を文字列から配列に変換
