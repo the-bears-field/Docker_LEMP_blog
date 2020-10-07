@@ -174,10 +174,109 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
     }
 }
 
-class DisplayPostsOnIndexWordsSearchProcess extends DisplayPostsOnIndex implements ISelect
+class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implements ISelect
 {
-    function selectCommand() {
+    private $searchWords;
+    private $whereAndLikeClause;
 
+    function setSearchWords($string)
+    {
+        // 全角スペースを半角へ
+        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
+        // 両サイドのスペースを消す
+        $string = trim($string);
+        // 改行、タブをスペースに変換
+        $string = preg_replace('/[\n\r\t]/', ' ', $string);
+        // 複数スペースを一つのスペースに変換
+        $string = preg_replace('/\s{2,}/', ' ', $string);
+        //文字列を配列に変換
+        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
+        //配列で重複している物を削除する
+        $array = array_unique($array);
+        //Keyの再定義
+        $array = array_values($array);
+
+        $this->searchWords = $array;
+    }
+
+    function getSearchWords() {
+        return $this->searchWords;
+    }
+
+    function getWhereAndLikeClause() {
+        return $this->whereAndLikeClause;
+    }
+
+    function setWhereAndLikeClause() {
+        if(!isset($this->searchWords)){
+            return '';
+        }else{
+            $whereAndLikeClause = '';
+            $searchWords        = $this->searchWords;
+
+            for ($i = 0; $i < count($searchWords); $i++) {
+                if($i === 0){
+                    $whereAndLikeClause .= ' WHERE post LIKE :'. strval($i);
+                } else {
+                    $whereAndLikeClause .= ' AND post LIKE :'. strval($i);
+                }
+            }
+
+            for ($i = 0; $i < count($searchWords); $i++) {
+                if($i === 0){
+                    $whereAndLikeClause .= ' OR title LIKE :'. strval($i);
+                } else {
+                    $whereAndLikeClause .= ' AND title LIKE :'. strval($i);
+                }
+            }
+            $whereAndLikeClause .= " ESCAPE '!'";
+
+            $this->whereAndLikeClause = $whereAndLikeClause;
+        }
+    }
+
+    function setTotalArticleCount() {
+        if(!$this->whereAndLikeClause){
+            return false;
+        }
+        $pdo               = $this->getPdo();
+        $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts";
+        $sqlCommand       .= $this->whereAndLikeClause;
+        $totalArticleCount = $pdo->prepare($sqlCommand);
+        $searchWords       = $this->searchWords;
+
+        for ($i = 0; $i < count($searchWords); $i++) {
+            $totalArticleCount->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
+        }
+
+        $totalArticleCount->execute();
+        $totalArticleCount       = $totalArticleCount->fetchColumn();
+        $this->totalArticleCount = intval($totalArticleCount);
+    }
+
+    function selectCommand() {
+        $pdo         = $this->getPdo();
+        $searchWords = $this->searchWords;
+
+        $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                        LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                        LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                        LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id";
+
+        if($this->totalArticleCount > 0){
+            $sqlCommand .= $this->whereAndLikeClause;
+            $sqlCommand .= 'GROUP BY posts.post_id ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay';
+            $stmt        = $pdo->prepare($sqlCommand);
+
+            for ($i = 0; $i < count($searchWords); $i++) {
+                $stmt->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
+            }
+
+            $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        }
     }
 }
 

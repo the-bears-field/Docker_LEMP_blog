@@ -67,58 +67,14 @@ if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
 //検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
     $searchWord  = $_GET['searchWord'];
-    $searchWord  = trimmingSearchWords($searchWord);
-    //文字列を配列に変換
-    $searchWords = preg_split('/[\s]/', $searchWord, -1, PREG_SPLIT_NO_EMPTY);
-    //配列で重複している物を削除する
-    $searchWords = array_unique($searchWords);
-
-    //Keyの再定義
-    $searchWords = array_values($searchWords);
-
-    $countClause = "SELECT COUNT(posts.post_id) FROM posts";
-
-    for ($i = 0; $i < count($searchWords); $i++) {
-        if($i === 0){
-            $whereAndLikeClause .= ' WHERE post LIKE :'. strval($i);
-        } else {
-            $whereAndLikeClause .= ' AND post LIKE :'. strval($i);
-        }
-    }
-
-    for ($i = 0; $i < count($searchWords); $i++) {
-        if($i === 0){
-            $whereAndLikeClause .= ' OR title LIKE :'. strval($i);
-        } else {
-            $whereAndLikeClause .= ' AND title LIKE :'. strval($i);
-        }
-    }
-    $whereAndLikeClause .= " ESCAPE '!'";
-
-    $sqlCommand        = $countClause. $whereAndLikeClause;
-    $totalArticleCount = pdoPrepare($sqlCommand);
-
-    for ($i = 0; $i < count($searchWords); $i++) {
-        $totalArticleCount->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
-    }
-
-    $totalArticleCount->execute();
-    $totalArticleCount = $totalArticleCount->fetchColumn();
-    $totalArticleCount = intval($totalArticleCount);
-
-    $selectClause = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                    LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id";
-
-    if($totalArticleCount > 0){
-        $sqlCommand  = $selectClause. $whereAndLikeClause. 'GROUP BY posts.post_id ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay';
-        $stmt        = pdoPrepare($sqlCommand);
-
-        for ($i = 0; $i < count($searchWords); $i++) {
-            $stmt->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
-        }
-    }
+    $displayPosts = new DisplayPostsOnIndexByWordsSearchProcess();
+    $displayPosts->setSearchWords($searchWord);
+    $displayPosts->setWhereAndLikeClause();
+    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
+    $displayPosts->setCountArticleDisplay($countArticleDisplay);
+    $displayPosts->setTotalArticleCount();
+    $result = $displayPosts->selectCommand();
+    $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
 if($totalArticleCount === 0 && $searchWord === ''){
@@ -174,26 +130,6 @@ if($totalArticleCount === 0 && $searchWord === ''){
     !empty($searchWord) || $searchWord === '0' ? $searchResultMessage = $searchWord. ' の検索結果' : $searchResultMessage = null;
 
     !empty($searchResultMessage) && isset($_GET['tag']) ? $searchResultMessage = '#'. $searchResultMessage : $searchResultMessage;
-}
-
-function trimmingSearchWords($string)
-{
-    // 全角スペースを半角へ
-    $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
-    // 両サイドのスペースを消す
-    $string = trim($string);
-    // 改行、タブをスペースに変換
-    $string = preg_replace('/[\n\r\t]/', ' ', $string);
-    // 複数スペースを一つのスペースに変換
-    $string = preg_replace('/\s{2,}/', ' ', $string);
-
-    return $string;
-}
-
-function pdoPrepare($sqlCommand){
-    $pdo        = (new DatabaseConnection())->getPdo();
-    $pdoPrepare = $pdo->prepare($sqlCommand);
-    return $pdoPrepare;
 }
 
 include_once __DIR__ . '/views/indexView.php';
