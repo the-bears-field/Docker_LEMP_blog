@@ -44,6 +44,7 @@ if (basename($_SERVER['SCRIPT_NAME']) == basename(__FILE__)) {
 </header>
 <main class="main main--has-right-sidebar flex-direction-column">
     <? echo isset($searchResultMessage) ? '<article class="search-result-message">'. htmlspecialchars($searchResultMessage). '</article>' : null; ?>
+    <? echo isset($searchResultMessage) && $totalArticleCount !== 0 ? '<article class="search-result-message">検索結果: '. htmlspecialchars($totalArticleCount). '件見つかりました。</article>' : null; ?>
     <? foreach($result as $post) : ?>
     <div class="main__posts posts">
         <article class="posts__content flex-direction-column">
