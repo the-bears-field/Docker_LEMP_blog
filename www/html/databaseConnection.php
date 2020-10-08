@@ -280,6 +280,43 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
     }
 }
 
+/**
+* postで使用
+*/
+class DisplayPostsOnPost extends DBConnection implements ISelect
+{
+    private $postId;
+
+    function setPostId($postId) {
+        $this->postId = $postId;
+    }
+
+    function selectCommand() {
+        if(!$this->postId){
+            return false;
+        }
+
+        $pdo        = $this->getPdo();
+        $sqlCommand = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                    LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                    GROUP BY posts.post_id
+                    HAVING posts.post_id = :id";
+        $stmt       = $pdo->prepare($sqlCommand);
+        $stmt->bindValue(':id', $this->postId, PDO::PARAM_INT);
+        $stmt->execute();
+        $result     = $stmt->fetch();
+
+        if($result){
+            $result['tags'] === null ? $result['tags'] = [] : $result['tags'] = explode(',', $result['tags']);
+            return $result;
+        } else {
+            return false;
+        }
+    }
+}
+
 
 /**
 * クラス設計が完成し次第、削除予定
