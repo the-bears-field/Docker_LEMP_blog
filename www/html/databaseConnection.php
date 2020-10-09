@@ -6,7 +6,7 @@ interface ISelect
 
 interface IInsert
 {
-    function insertCommand(): PDOStatement;
+    function insertCommand();
 }
 
 interface IUpdate
@@ -179,18 +179,18 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
     private $searchWords;
     private $whereAndLikeClause;
 
-    function setSearchWords($string)
+    function setSearchWords($tags)
     {
         // 全角スペースを半角へ
-        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
+        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
         // 両サイドのスペースを消す
-        $string = trim($string);
+        $tags = trim($tags);
         // 改行、タブをスペースに変換
-        $string = preg_replace('/[\n\r\t]/', ' ', $string);
+        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
         // 複数スペースを一つのスペースに変換
-        $string = preg_replace('/\s{2,}/', ' ', $string);
+        $tags = preg_replace('/\s{2,}/', ' ', $tags);
         //文字列を配列に変換
-        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
+        $array = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
         //配列で重複している物を削除する
         $array = array_unique($array);
         //Keyの再定義
@@ -317,7 +317,73 @@ class DisplayPostsOnPost extends DBConnection implements ISelect
     }
 }
 
+/**
+* newで使用
+*/
+class InsertPostAndTags extends DBConnection implements IInsert
+{
+    private $title;
+    private $post;
+    private $tags;
+    private $userId;
 
+    function setTitle($title){
+        $this->title = $title;
+    }
+
+    function setPost($post){
+        $this->post = $post;
+    }
+
+    function setTags($tags){
+        // 全角スペースを半角へ
+        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
+        // 両サイドのスペースを消す
+        $tags = trim($tags);
+        // 改行、タブをスペースに変換
+        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
+        // 複数スペースを一つのスペースに変換
+        $tags = preg_replace('/\s{2,}/', ' ', $tags);
+        $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+        $tags = array_unique($tags);
+        $tags = array_values($tags);
+        $this->tags = $tags;
+    }
+
+    function setUserId($userId){
+        $this->userId = $userId;
+    }
+
+    function insertCommand() {
+        try{
+            $pdo  = $this->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO posts(title, post) VALUES(:title, :post)");
+            $stmt->bindValue(":title", $this->title, PDO::PARAM_STR);
+            $stmt->bindValue(":post", $this->post, PDO::PARAM_STR);
+            $stmt->execute();
+            $lastInsertPostId = $pdo->lastInsertID();
+            $stmt = $pdo->prepare("INSERT INTO user_uploaded_posts(user_id, post_id) VALUES(:user_id, :post_id)");
+            $stmt->bindValue(":user_id", $this->userId, PDO::PARAM_INT);
+            $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($this->tags) {
+                //tagsに格納されている数だけloop処理の必要あり。
+                for($i = 0; $i < count($this->tags); ++$i){
+                    $stmt = $pdo->prepare("CALL sp_add_tags(:tag_name, :post_id)");
+                    $stmt->bindValue(":tag_name", $this->tags[$i], PDO::PARAM_STR);
+                    $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
+                    $stmt->execute();
+                }
+            }
+        } catch (PDOException $e) {
+            $errorMessage = "データベースエラー";
+            //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
+            echo $e->getMessage();
+            die();
+        }
+    }
+}
 /**
 * クラス設計が完成し次第、削除予定
 */
