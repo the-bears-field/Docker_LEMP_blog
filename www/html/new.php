@@ -6,69 +6,29 @@ requireLoginedSession();
 
 date_default_timezone_set('Asia/Tokyo');
 
-function trimmingWords($string)
-{
-    // 全角スペースを半角へ
-    $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
-    // 両サイドのスペースを消す
-    $string = trim($string);
-    // 改行、タブをスペースに変換
-    $string = preg_replace('/[\n\r\t]/', ' ', $string);
-    // 複数スペースを一つのスペースに変換
-    $string = preg_replace('/\s{2,}/', ' ', $string);
-
-    return $string;
-}
-
-if (!isset($_POST["posting"])) {
+if (!isset($_POST['posting'])) {
     $token = sha1(uniqid(random_bytes(16), true));
     $_SESSION['token'] = $token;
 }
 
-if (isset($_POST["posting"])) {
+if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
-        die("不正なアクセスが行われました");
+        die('不正なアクセスが行われました');
     }
 
     $title  = $_POST['title'];
     $post   = $_POST['post'];
-    $tags   = trimmingWords($_POST['tags']);
+    $tags   = $_POST['tags'];
     $userId = $_SESSION['id'];
 
-    try{
-        $pdo  = (new DatabaseConnection())->getPdo();
-        $stmt = $pdo->prepare("INSERT INTO posts(title, post) VALUES(:title, :post)");
-        $stmt->bindValue(":title", $title, PDO::PARAM_STR);
-        $stmt->bindValue(":post", $post, PDO::PARAM_STR);
-        $stmt->execute();
-        $lastInsertPostId = $pdo->lastInsertID();
-        $stmt = $pdo->prepare("INSERT INTO user_uploaded_posts(user_id, post_id) VALUES(:user_id, :post_id)");
-        $stmt->bindValue(":user_id", $userId, PDO::PARAM_INT);
-        $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
-        $stmt->execute();
-
-        if ($tags) {
-            $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
-            $tags = array_unique($tags);
-            $tags = array_values($tags);
-
-            //tagsに格納されている数だけloop処理の必要あり。
-            for($i = 0; $i < count($tags); ++$i){
-                $stmt = $pdo->prepare("CALL sp_add_tags(:tag_name, :post_id)");
-                $stmt->bindValue(":tag_name", $tags[$i], PDO::PARAM_STR);
-                $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
-                $stmt->execute();
-            }
-        }
-
-        unset($_SESSION["token"]);
-        header("Location: /index.php");
-    } catch (PDOException $e) {
-        $errorMessage = "データベースエラー";
-        //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
-        echo $e->getMessage();
-        die();
-    }
+    $InsertPost = new InsertPostAndTags();
+    $InsertPost->setTitle($title);
+    $InsertPost->setPost($post);
+    $InsertPost->setTags($tags);
+    $InsertPost->setUserId($userId);
+    $InsertPost->insertCommand();
+    unset($_SESSION['token']);
+    header('Location: /index.php');
 }
 
 //画像ソート関係
