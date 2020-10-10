@@ -100,13 +100,15 @@ class DisplayPostsOnIndexByNomalProcess extends DisplayPostsOnIndex implements I
         $pdo = $this->getPdo();
 
         if($this->totalArticleCount > 0){
-            $sqlCommand = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                        LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                        LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                        LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                        GROUP BY posts.post_id
-                        ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
-            $stmt       = $pdo->prepare($sqlCommand);
+            $sqlCommand = <<< 'SQL'
+                SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                GROUP BY posts.post_id
+                ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay
+                SQL;
+            $stmt = $pdo->prepare($sqlCommand);
             $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
             $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
             $stmt->execute();
@@ -124,11 +126,13 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
     }
 
     function setTotalArticleCount() {
-        $sqlCommand = "SELECT COUNT( * ) FROM (
-                            SELECT tags.tag_name FROM post_tags
-                            JOIN tags ON post_tags.tag_id = tags.tag_id
-                            WHERE tag_name = :tag
-                        ) AS is_find_tag";
+        $sqlCommand = <<< 'SQL'
+            SELECT COUNT( * ) FROM (
+                SELECT tags.tag_name FROM post_tags
+                JOIN tags ON post_tags.tag_id = tags.tag_id
+                WHERE tag_name = :tag
+            ) AS is_find_tag
+            SQL;
         $pdo        = $this->getPdo();
         $isFindTag  = $pdo->prepare($sqlCommand);
         $isFindTag->bindValue(':tag', $this->tag, PDO::PARAM_STR);
@@ -138,13 +142,15 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
         if(!$isFindTag){
             $this->totalArticleCount = 0;
         } else {
-            $sqlCommand = "SELECT COUNT( * ) FROM (
-                                SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
-                                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                                GROUP BY posts.post_id
-                                HAVING tags LIKE :tag
-                            ) AS tag_count";
+            $sqlCommand = <<< 'SQL'
+                SELECT COUNT( * ) FROM (
+                    SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
+                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                    GROUP BY posts.post_id
+                    HAVING tags LIKE :tag
+                ) AS tag_count
+                SQL;
             $totalArticleCount       = $pdo->prepare($sqlCommand);
             $totalArticleCount->bindValue(':tag', '%'. $this->tag. '%', PDO::PARAM_STR);
             $totalArticleCount->execute();
@@ -157,13 +163,15 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
         $pdo = $this->getPdo();
 
         if($this->totalArticleCount > 0 || $this->totalArticleCount){
-            $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                            LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                            GROUP BY posts.post_id
-                            HAVING tags LIKE :tag
-                            ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay";
+            $sqlCommand  = <<< 'SQL'
+                SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                GROUP BY posts.post_id
+                HAVING tags LIKE :tag
+                ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay
+                SQL;
             $stmt        = $pdo->prepare($sqlCommand);
             $stmt->bindValue(':tag', '%'. $this->tag. '%', PDO::PARAM_STR);
             $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
@@ -258,10 +266,12 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
         $pdo         = $this->getPdo();
         $searchWords = $this->searchWords;
 
-        $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                        LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                        LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                        LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id";
+        $sqlCommand  = <<< 'SQL'
+            SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+            LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+            SQL;
 
         if($this->totalArticleCount > 0){
             $sqlCommand .= $this->whereAndLikeClause;
@@ -297,12 +307,14 @@ class DisplayPostsOnPost extends DBConnection implements ISelect
         }
 
         $pdo        = $this->getPdo();
-        $sqlCommand = "SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                    LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                    GROUP BY posts.post_id
-                    HAVING posts.post_id = :id";
+        $sqlCommand = <<< 'SQL'
+            SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+            LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+            GROUP BY posts.post_id
+            HAVING posts.post_id = :id
+            SQL;
         $stmt       = $pdo->prepare($sqlCommand);
         $stmt->bindValue(':id', $this->postId, PDO::PARAM_INT);
         $stmt->execute();
@@ -384,6 +396,13 @@ class InsertPostAndTags extends DBConnection implements IInsert
         }
     }
 }
+
+/**
+* editで使用
+*/
+
+
+
 /**
 * クラス設計が完成し次第、削除予定
 */
