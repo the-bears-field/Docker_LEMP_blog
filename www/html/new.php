@@ -15,16 +15,11 @@ if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
         die('不正なアクセスが行われました');
     }
-
-    $title  = $_POST['title'];
-    $post   = $_POST['post'];
-    $tags   = $_POST['tags'];
+    $post   = $_POST;
     $userId = $_SESSION['id'];
 
     $InsertPost = new InsertPostAndTags();
-    $InsertPost->setTitle($title);
-    $InsertPost->setPost($post);
-    $InsertPost->setTags($tags);
+    $InsertPost->setHttpPost($post);
     $InsertPost->setUserId($userId);
     $InsertPost->insertCommand();
     unset($_SESSION['token']);

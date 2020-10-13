@@ -12,9 +12,9 @@ if (isset($_GET['postID'])) {
     //タグ一覧取得
     $tagsList = (new DisplayAllTags)->selectCommand();
 
-    $postID   = intval($_GET['postID']);
+    $get         = $_GET;
     $postDisplay = new DisplayPostsOnPost;
-    $postDisplay->setPostId($postID);
+    $postDisplay->setHttpGet($get);
     $result = $postDisplay->selectCommand();
 
     if (!$result) {

@@ -53,11 +53,11 @@ if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
         die("不正なアクセスが行われました");
     } else {
-        $title       = $_POST['title'];
-        $post        = $_POST['post'];
-        $updatedTags = $_POST['tags'];
-        $currentTags = $_POST['current-tags'];
-        $updatedAt   = (new Datetime())->format('Y-m-d H:i:s');
+        $post        = $_POST;
+
+        $updatePost = new UpdatePostAndTags;
+        $updatePost->setHttpPost($post);
+        $updatePost->updateCommand();
 
         if($updatedTags){
             $updatedTags = trimmingWords($_POST['tags']);

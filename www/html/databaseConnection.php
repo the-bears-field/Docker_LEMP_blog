@@ -11,12 +11,22 @@ interface IInsert
 
 interface IUpdate
 {
-    function updateCommand(): PDOStatement;
+    function updateCommand();
 }
 
 interface IDelete
 {
     function deleteCommand(): PDOStatement;
+}
+
+interface ISetHttpGet
+{
+    function setHttpGet($get);
+}
+
+interface ISetHttpPost
+{
+    function setHttpPost($post);
 }
 
 abstract class DBConnection
@@ -117,15 +127,16 @@ class DisplayPostsOnIndexByNomalProcess extends DisplayPostsOnIndex implements I
     }
 }
 
-class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implements ISelect
+class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implements ISelect, ISetHttpGet
 {
     private $tag;
 
-    function setTag($tag){
-        $this->tag = $tag;
+    function setHttpGet($get){
+        $this->tag = $get['tag'];
     }
 
     function setTotalArticleCount() {
+        $tag        = $this->tag;
         $sqlCommand = <<< 'SQL'
             SELECT COUNT( * ) FROM (
                 SELECT tags.tag_name FROM post_tags
@@ -135,7 +146,7 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
             SQL;
         $pdo        = $this->getPdo();
         $isFindTag  = $pdo->prepare($sqlCommand);
-        $isFindTag->bindValue(':tag', $this->tag, PDO::PARAM_STR);
+        $isFindTag->bindValue(':tag', $tag, PDO::PARAM_STR);
         $isFindTag->execute();
         $isFindTag  = $isFindTag->fetchColumn();
 
@@ -152,7 +163,7 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
                 ) AS tag_count
                 SQL;
             $totalArticleCount       = $pdo->prepare($sqlCommand);
-            $totalArticleCount->bindValue(':tag', '%'. $this->tag. '%', PDO::PARAM_STR);
+            $totalArticleCount->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
             $totalArticleCount->execute();
             $totalArticleCount       = $totalArticleCount->fetchColumn();
             $this->totalArticleCount = intval($totalArticleCount);
@@ -293,16 +304,17 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
 /**
 * postで使用
 */
-class DisplayPostsOnPost extends DBConnection implements ISelect
+class DisplayPostsOnPost extends DBConnection implements ISelect, ISetHttpGet
 {
     private $postId;
 
-    function setPostId($postId) {
-        $this->postId = $postId;
+    function setHttpGet($get) {
+        $this->postId = intval($get['postID']);
     }
 
     function selectCommand() {
-        if(!$this->postId){
+        $postId = $this->postId;
+        if(!$postId){
             return false;
         }
 
@@ -316,7 +328,7 @@ class DisplayPostsOnPost extends DBConnection implements ISelect
             HAVING posts.post_id = :id
             SQL;
         $stmt       = $pdo->prepare($sqlCommand);
-        $stmt->bindValue(':id', $this->postId, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $postId, PDO::PARAM_INT);
         $stmt->execute();
         $result     = $stmt->fetch();
 
@@ -332,12 +344,106 @@ class DisplayPostsOnPost extends DBConnection implements ISelect
 /**
 * newで使用
 */
-class InsertPostAndTags extends DBConnection implements IInsert
+class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
 {
     private $title;
     private $post;
     private $tags;
     private $userId;
+
+    function setHttpPost($post){
+        $this->title = $post['title'];
+        $this->post = $post['post'];
+
+        $tags = $post['tags'];
+        // 全角スペースを半角へ
+        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
+        // 両サイドのスペースを消す
+        $tags = trim($tags);
+        // 改行、タブをスペースに変換
+        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
+        // 複数スペースを一つのスペースに変換
+        $tags = preg_replace('/\s{2,}/', ' ', $tags);
+        $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+        $tags = array_unique($tags);
+        $tags = array_values($tags);
+        $this->tags = $tags;
+    }
+
+    function setUserId($userId){
+        $this->userId = $userId;
+    }
+
+    function insertCommand() {
+        $title  = $this->title;
+        $post   = $this->post;
+        $userId = $this->userId;
+        $tags   = $this->tags;
+
+        try{
+            $pdo  = $this->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO posts(title, post) VALUES(:title, :post)");
+            $stmt->bindValue(":title", $title, PDO::PARAM_STR);
+            $stmt->bindValue(":post", $post, PDO::PARAM_STR);
+            $stmt->execute();
+            $lastInsertPostId = $pdo->lastInsertID();
+            $stmt = $pdo->prepare("INSERT INTO user_uploaded_posts(user_id, post_id) VALUES(:user_id, :post_id)");
+            $stmt->bindValue(":user_id", $userId, PDO::PARAM_INT);
+            $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($tags) {
+                //tagsに格納されている数だけloop処理の必要あり。
+                for($i = 0; $i < count($tags); ++$i){
+                    $stmt = $pdo->prepare("CALL sp_add_tags(:tag_name, :post_id)");
+                    $stmt->bindValue(":tag_name", $tags[$i], PDO::PARAM_STR);
+                    $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
+                    $stmt->execute();
+                }
+            }
+        } catch (PDOException $e) {
+            $errorMessage = "データベースエラー";
+            //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
+            echo $e->getMessage();
+            die();
+        }
+    }
+}
+
+/**
+* editで使用
+*/
+class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpPost
+{
+    private $title;
+    private $post;
+    private $tags;
+    private $userId;
+    private $postId;
+    private $updatedAt;
+
+    function __construct() {
+        $this->updatedAt = (new Datetime())->format('Y-m-d H:i:s');
+    }
+
+    function setHttpPost($post) {
+        $this->title = $post['title'];
+        $this->post = $post['post'];
+
+        $tags = $post['tags'];
+        // 全角スペースを半角へ
+        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
+        // 両サイドのスペースを消す
+        $tags = trim($tags);
+        // 改行、タブをスペースに変換
+        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
+        // 複数スペースを一つのスペースに変換
+        $tags = preg_replace('/\s{2,}/', ' ', $tags);
+        $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+        $tags = array_unique($tags);
+        $tags = array_values($tags);
+        $this->tags = $tags;
+    }
 
     function setTitle($title){
         $this->title = $title;
@@ -366,28 +472,19 @@ class InsertPostAndTags extends DBConnection implements IInsert
         $this->userId = $userId;
     }
 
-    function insertCommand() {
+    function setPostId($postId){
+        $this->postId = $postId;
+    }
+
+    function updateCommand() {
         try{
             $pdo  = $this->getPdo();
-            $stmt = $pdo->prepare("INSERT INTO posts(title, post) VALUES(:title, :post)");
-            $stmt->bindValue(":title", $this->title, PDO::PARAM_STR);
-            $stmt->bindValue(":post", $this->post, PDO::PARAM_STR);
+            $stmt = $pdo->prepare('UPDATE posts SET title = :title, post = :post, updated_at = :updated_at WHERE post_id = :id');
+            $stmt->bindValue(':title', $this->title, PDO::PARAM_STR);
+            $stmt->bindValue(':post', $this->post, PDO::PARAM_STR);
+            $stmt->bindParam(':updated_at', $this->updatedAt, PDO::PARAM_STR);
+            $stmt->bindValue(':id', $postID, PDO::PARAM_STR);
             $stmt->execute();
-            $lastInsertPostId = $pdo->lastInsertID();
-            $stmt = $pdo->prepare("INSERT INTO user_uploaded_posts(user_id, post_id) VALUES(:user_id, :post_id)");
-            $stmt->bindValue(":user_id", $this->userId, PDO::PARAM_INT);
-            $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
-            $stmt->execute();
-
-            if ($this->tags) {
-                //tagsに格納されている数だけloop処理の必要あり。
-                for($i = 0; $i < count($this->tags); ++$i){
-                    $stmt = $pdo->prepare("CALL sp_add_tags(:tag_name, :post_id)");
-                    $stmt->bindValue(":tag_name", $this->tags[$i], PDO::PARAM_STR);
-                    $stmt->bindValue(":post_id", $lastInsertPostId, PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-            }
         } catch (PDOException $e) {
             $errorMessage = "データベースエラー";
             //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
@@ -396,11 +493,6 @@ class InsertPostAndTags extends DBConnection implements IInsert
         }
     }
 }
-
-/**
-* editで使用
-*/
-
 
 
 /**

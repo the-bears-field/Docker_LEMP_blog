@@ -52,8 +52,9 @@ if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] ==
 // タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord   = $_GET['tag'];
+    $get          = $_GET;
     $displayPosts = new DisplayPostsOnIndexByTagSearchProcess();
-    $displayPosts->setTag($searchWord);
+    $displayPosts->setHttpGet($get);
     $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
     $displayPosts->setCountArticleDisplay($countArticleDisplay);
     $displayPosts->setTotalArticleCount();
@@ -64,6 +65,7 @@ if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
 // 検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
     $searchWord   = $_GET['searchWord'];
+    $get          = $_GET;
     $displayPosts = new DisplayPostsOnIndexByWordsSearchProcess();
     $displayPosts->setSearchWords($searchWord);
     $displayPosts->setWhereAndLikeClause();
