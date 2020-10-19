@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__. '/vendor/autoload.php';
+
+// .env読込
+$dotenv = (Dotenv\Dotenv::createImmutable(__DIR__))->load();
+
 interface ISelect
 {
     function selectCommand();
@@ -31,28 +36,22 @@ interface ISetHttpPost
 
 abstract class DBConnection
 {
-    const     DB_NAME            = 'myblog';
-    const     HOST               = 'db';         //'172.21.0.2' or 'db'      IPアドレス、またはコンテナ名を入力
-    const     PORT               = '3306';
-    const     CHARACTOR_ENCODING = 'utf8mb4';
-    const     USER               = 'root';
-    const     PASSWORD_BCRYPT    = 'secret';
     protected $pdo;
 
     public function __construct()
     {
         $dsn = sprintf(
             "mysql:host=%s; port=%s; dbname=%s; charset=%s",
-            self::HOST,
-            self::PORT,
-            self::DB_NAME,
-            self::CHARACTOR_ENCODING
+            $_ENV['DB_HOST'],
+            $_ENV['DB_PORT'],
+            $_ENV['DB_NAME'],
+            $_ENV['DB_CHARACTOR_ENCODING']
         );
 
         $pdoOption = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
 
         try{
-            $pdo   = new PDO($dsn, self::USER, self::PASSWORD_BCRYPT, $pdoOption);
+            $pdo   = new PDO($dsn, $_ENV['DB_USER'], $_ENV['DB_PASSWORD_BCRYPT'], $pdoOption);
         } catch (Extention $e) {
             echo 'error '.$e->getMessage;
             die();
