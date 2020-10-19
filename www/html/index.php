@@ -24,7 +24,7 @@ nginxのconfファイルを書き換えることで対応。
 */
 
 //タグ一覧取得
-$tagsList = (new DisplayAllTags)->selectCommand();
+$tagsList = (new AllTagData)->selectCommand();
 
 //1ページに表示するpostの件数
 $countArticleDisplay = 10;
