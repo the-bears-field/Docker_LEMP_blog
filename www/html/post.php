@@ -10,7 +10,7 @@ date_default_timezone_set('Asia/Tokyo');
 
 if (isset($_GET['postID'])) {
     //タグ一覧取得
-    $tagsList = (new AllTagData)->selectCommand();
+    $tagsList = (new AllTagsData)->selectCommand();
 
     $get         = $_GET;
     $postDisplay = new DisplayPostsOnPost;

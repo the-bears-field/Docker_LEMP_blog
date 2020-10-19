@@ -70,7 +70,7 @@ class DBConnctionFactory
 /**
 * indexで使用
 */
-class AllTagData extends DBConnection implements ISelect
+class AllTagsData extends DBConnection implements ISelect
 {
     function selectCommand() {
         $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
