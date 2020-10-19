@@ -31,22 +31,23 @@ interface ISetHttpPost
 
 abstract class DBConnection
 {
-    const DB_NAME            = 'myblog';
-    const HOST               = 'db';         //'172.21.0.2' or 'db'      IPアドレス、またはコンテナ名を入力
-    const PORT               = '3306';
-    const CHARACTOR_ENCODING = 'utf8mb4';
-    const USER               = 'root';
-    const PASSWORD_BCRYPT    = 'secret';
+    const     DB_NAME            = 'myblog';
+    const     HOST               = 'db';         //'172.21.0.2' or 'db'      IPアドレス、またはコンテナ名を入力
+    const     PORT               = '3306';
+    const     CHARACTOR_ENCODING = 'utf8mb4';
+    const     USER               = 'root';
+    const     PASSWORD_BCRYPT    = 'secret';
+    protected $pdo;
 
-    public function getPdo(): PDO
+    public function __construct()
     {
-        $dsn       = sprintf(
-                        "mysql:host=%s; port=%s; dbname=%s; charset=%s",
-                        self::HOST,
-                        self::PORT,
-                        self::DB_NAME,
-                        self::CHARACTOR_ENCODING
-                    );
+        $dsn = sprintf(
+            "mysql:host=%s; port=%s; dbname=%s; charset=%s",
+            self::HOST,
+            self::PORT,
+            self::DB_NAME,
+            self::CHARACTOR_ENCODING
+        );
 
         $pdoOption = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
 
@@ -56,9 +57,15 @@ abstract class DBConnection
             echo 'error '.$e->getMessage;
             die();
         }
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
-        return $pdo;
+        $this->pdo = $pdo;
     }
+}
+
+class DBConnctionFactory
+{
+    
 }
 
 /**
@@ -68,7 +75,7 @@ class DisplayAllTags extends DBConnection implements ISelect
 {
     function selectCommand() {
         $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
-        $pdo        = $this->getPdo();
+        $pdo        = $this->pdo;
         $tagsList   = $pdo->prepare($sqlCommand);
         $tagsList->execute();
         return $tagsList->fetchAll(PDO::FETCH_COLUMN);
@@ -96,7 +103,7 @@ abstract class DisplayPostsOnIndex extends DBConnection
 
     function setTotalArticleCount() {
         $sqlCommand              = "SELECT COUNT(posts.post_id) FROM posts";
-        $pdo                     = $this->getPdo();
+        $pdo                     = $this->pdo;
         $totalArticleCount       = $pdo->prepare($sqlCommand);
         $totalArticleCount->execute();
         $totalArticleCount       = $totalArticleCount->fetchColumn();
@@ -107,7 +114,7 @@ abstract class DisplayPostsOnIndex extends DBConnection
 class DisplayPostsOnIndexByNomalProcess extends DisplayPostsOnIndex implements ISelect
 {
     function selectCommand() {
-        $pdo = $this->getPdo();
+        $pdo = $this->pdo;
 
         if($this->totalArticleCount > 0){
             $sqlCommand = <<< 'SQL'
@@ -144,7 +151,7 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
                 WHERE tag_name = :tag
             ) AS is_find_tag
             SQL;
-        $pdo        = $this->getPdo();
+        $pdo        = $this->pdo;
         $isFindTag  = $pdo->prepare($sqlCommand);
         $isFindTag->bindValue(':tag', $tag, PDO::PARAM_STR);
         $isFindTag->execute();
@@ -171,9 +178,13 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
     }
 
     function selectCommand() {
-        $pdo = $this->getPdo();
+        $pdo                 = $this->pdo;
+        $tag                 = $this->tag;
+        $totalArticleCount   = $this->totalArticleCount;
+        $beginArticleDisplay = $this->beginArticleDisplay;
+        $countArticleDisplay = $this->countArticleDisplay;
 
-        if($this->totalArticleCount > 0 || $this->totalArticleCount){
+        if($totalArticleCount > 0 || $totalArticleCount){
             $sqlCommand  = <<< 'SQL'
                 SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
                 LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
@@ -184,21 +195,21 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
                 ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay
                 SQL;
             $stmt        = $pdo->prepare($sqlCommand);
-            $stmt->bindValue(':tag', '%'. $this->tag. '%', PDO::PARAM_STR);
-            $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
-            $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
+            $stmt->bindValue(':beginArticleDisplay', $beginArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':countArticleDisplay', $countArticleDisplay, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll();
         }
     }
 }
 
-class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implements ISelect
+class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implements ISelect, ISetHttpGet
 {
     private $searchWords;
     private $whereAndLikeClause;
 
-    function setSearchWords($tags)
+    function setHttpGet($tags)
     {
         // 全角スペースを半角へ
         $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
@@ -258,7 +269,8 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
         if(!$this->whereAndLikeClause){
             return false;
         }
-        $pdo               = $this->getPdo();
+
+        $pdo               = $this->pdo;
         $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts";
         $sqlCommand       .= $this->whereAndLikeClause;
         $totalArticleCount = $pdo->prepare($sqlCommand);
@@ -274,7 +286,7 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
     }
 
     function selectCommand() {
-        $pdo         = $this->getPdo();
+        $pdo         = $this->pdo;
         $searchWords = $this->searchWords;
 
         $sqlCommand  = <<< 'SQL'
@@ -318,7 +330,7 @@ class DisplayPostsOnPost extends DBConnection implements ISelect, ISetHttpGet
             return false;
         }
 
-        $pdo        = $this->getPdo();
+        $pdo        = $this->pdo;
         $sqlCommand = <<< 'SQL'
             SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
             LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
@@ -381,7 +393,7 @@ class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
         $tags   = $this->tags;
 
         try{
-            $pdo  = $this->getPdo();
+            $pdo  = $this->pdo;
             $stmt = $pdo->prepare("INSERT INTO posts(title, post) VALUES(:title, :post)");
             $stmt->bindValue(":title", $title, PDO::PARAM_STR);
             $stmt->bindValue(":post", $post, PDO::PARAM_STR);
@@ -478,7 +490,7 @@ class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpPost
 
     function updateCommand() {
         try{
-            $pdo  = $this->getPdo();
+            $pdo  = $this->pdo;
             $stmt = $pdo->prepare('UPDATE posts SET title = :title, post = :post, updated_at = :updated_at WHERE post_id = :id');
             $stmt->bindValue(':title', $this->title, PDO::PARAM_STR);
             $stmt->bindValue(':post', $this->post, PDO::PARAM_STR);
@@ -557,7 +569,7 @@ class DatabaseConnection
 
     public function databaseFetch(string $sqlCommand): PDOStatement
     {
-        $pdo = $this->getPdo();
+        $pdo = $this->pdo;
 
         try{
             $stmt   = $pdo->prepare($sqlCommand);
