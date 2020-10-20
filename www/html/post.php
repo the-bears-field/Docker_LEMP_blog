@@ -13,7 +13,7 @@ if (isset($_GET['postID'])) {
     $tagsList = (new AllTagsData)->selectCommand();
 
     $get         = $_GET;
-    $postDisplay = new DisplayPostsOnPost;
+    $postDisplay = new PostsDataUsedInPost;
     $postDisplay->setHttpGet($get);
     $result = $postDisplay->selectCommand();
 

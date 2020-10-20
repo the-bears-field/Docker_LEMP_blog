@@ -82,58 +82,59 @@ class AllTagsData extends DBConnection implements ISelect
 }
 
 
-abstract class DisplayPostsOnIndex extends DBConnection
+abstract class PostsDataUsedInIndex extends DBConnection
 {
-    protected $beginArticleDisplay;
-    protected $countArticleDisplay;
-    protected $totalArticleCount;
+    protected $beginPostsCount;
+    protected $postsCountNumber;
+    protected $totalPostsCount;
 
-    function setBeginArticleDisplay($beginArticleDisplay) {
-        $this->beginArticleDisplay = $beginArticleDisplay;
+    public function setBeginPostsCount($beginPostsCount) {
+        $this->beginPostsCount = $beginPostsCount;
     }
 
-    function setCountArticleDisplay($countArticleDisplay) {
-        $this->countArticleDisplay = $countArticleDisplay;
+    public function setPostsCountNumber($postsCountNumber) {
+        $this->postsCountNumber = $postsCountNumber;
     }
 
-    function getTotalArticleCount() {
-        return $this->totalArticleCount;
+    public function getTotalPostsCount() {
+        return $this->totalPostsCount;
     }
 
-    function setTotalArticleCount() {
-        $sqlCommand              = "SELECT COUNT(posts.post_id) FROM posts";
-        $pdo                     = $this->pdo;
-        $totalArticleCount       = $pdo->prepare($sqlCommand);
-        $totalArticleCount->execute();
-        $totalArticleCount       = $totalArticleCount->fetchColumn();
-        $this->totalArticleCount = intval($totalArticleCount);
+    public function setTotalPostsCount() {
+        $sqlCommand            = "SELECT COUNT(posts.post_id) FROM posts";
+        $pdo                   = $this->pdo;
+        $totalPostsCount       = $pdo->prepare($sqlCommand);
+        $totalPostsCount->execute();
+        $totalPostsCount       = $totalPostsCount->fetchColumn();
+        $this->totalPostsCount = intval($totalPostsCount);
+        $pdo                   = null;
     }
 }
 
-class DisplayPostsOnIndexByNomalProcess extends DisplayPostsOnIndex implements ISelect
+class PostsDataUsedInIndexByNomalProcess extends PostsDataUsedInIndex implements ISelect
 {
     function selectCommand() {
         $pdo = $this->pdo;
 
-        if($this->totalArticleCount > 0){
+        if($this->totalPostsCount > 0){
             $sqlCommand = <<< 'SQL'
                 SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
                 LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
                 LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
                 LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
                 GROUP BY posts.post_id
-                ORDER BY post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay
+                ORDER BY post_id DESC LIMIT :beginPostsCount, :postsCountNumber
                 SQL;
             $stmt = $pdo->prepare($sqlCommand);
-            $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
-            $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':beginPostsCount', $this->beginPostsCount, PDO::PARAM_INT);
+            $stmt->bindValue(':postsCountNumber', $this->postsCountNumber, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll();
         }
     }
 }
 
-class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implements ISelect, ISetHttpGet
+class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implements ISelect, ISetHttpGet
 {
     private $tag;
 
@@ -168,22 +169,22 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
                     HAVING tags LIKE :tag
                 ) AS tag_count
                 SQL;
-            $totalArticleCount       = $pdo->prepare($sqlCommand);
-            $totalArticleCount->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
-            $totalArticleCount->execute();
-            $totalArticleCount       = $totalArticleCount->fetchColumn();
-            $this->totalArticleCount = intval($totalArticleCount);
+            $totalPostsCount       = $pdo->prepare($sqlCommand);
+            $totalPostsCount->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
+            $totalPostsCount->execute();
+            $totalPostsCount       = $totalPostsCount->fetchColumn();
+            $this->totalArticleCount = intval($totalPostsCount);
         }
     }
 
     function selectCommand() {
         $pdo                 = $this->pdo;
         $tag                 = $this->tag;
-        $totalArticleCount   = $this->totalArticleCount;
-        $beginArticleDisplay = $this->beginArticleDisplay;
-        $countArticleDisplay = $this->countArticleDisplay;
+        $totalPostsCount   = $this->totalPostsCount;
+        $beginPostsCount = $this->beginPostsCount;
+        $postsCountNumber = $this->postsCountNumber;
 
-        if($totalArticleCount > 0 || $totalArticleCount){
+        if($totalPostsCount > 0 || $totalPostsCount){
             $sqlCommand  = <<< 'SQL'
                 SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
                 LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
@@ -191,25 +192,26 @@ class DisplayPostsOnIndexByTagSearchProcess extends DisplayPostsOnIndex implemen
                 LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
                 GROUP BY posts.post_id
                 HAVING tags LIKE :tag
-                ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay
+                ORDER BY posts.post_id DESC LIMIT :beginPostsCount, :postsCountNumber
                 SQL;
             $stmt        = $pdo->prepare($sqlCommand);
             $stmt->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
-            $stmt->bindValue(':beginArticleDisplay', $beginArticleDisplay, PDO::PARAM_INT);
-            $stmt->bindValue(':countArticleDisplay', $countArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':beginPostsCount', $beginPostsCount, PDO::PARAM_INT);
+            $stmt->bindValue(':postsCountNumber', $postsCountNumber, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll();
         }
     }
 }
 
-class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implements ISelect, ISetHttpGet
+class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex implements ISelect, ISetHttpGet
 {
     private $searchWords;
     private $whereAndLikeClause;
 
-    function setHttpGet($tags)
+    function setHttpGet($get)
     {
+        $tags = $get['searchWord'];
         // 全角スペースを半角へ
         $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
         // 両サイドのスペースを消す
@@ -272,16 +274,16 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
         $pdo               = $this->pdo;
         $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts";
         $sqlCommand       .= $this->whereAndLikeClause;
-        $totalArticleCount = $pdo->prepare($sqlCommand);
+        $totalPostsCount = $pdo->prepare($sqlCommand);
         $searchWords       = $this->searchWords;
 
         for ($i = 0; $i < count($searchWords); $i++) {
-            $totalArticleCount->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
+            $totalPostsCount->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
         }
 
-        $totalArticleCount->execute();
-        $totalArticleCount       = $totalArticleCount->fetchColumn();
-        $this->totalArticleCount = intval($totalArticleCount);
+        $totalPostsCount->execute();
+        $totalPostsCount       = $totalPostsCount->fetchColumn();
+        $this->totalArticleCount = intval($totalPostsCount);
     }
 
     function selectCommand() {
@@ -295,17 +297,17 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
             LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
             SQL;
 
-        if($this->totalArticleCount > 0){
+        if($this->totalPostsCount > 0){
             $sqlCommand .= $this->whereAndLikeClause;
-            $sqlCommand .= 'GROUP BY posts.post_id ORDER BY posts.post_id DESC LIMIT :beginArticleDisplay, :countArticleDisplay';
+            $sqlCommand .= 'GROUP BY posts.post_id ORDER BY posts.post_id DESC LIMIT :beginPostsCount, :postsCountNumber';
             $stmt        = $pdo->prepare($sqlCommand);
 
             for ($i = 0; $i < count($searchWords); $i++) {
                 $stmt->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
             }
 
-            $stmt->bindValue(':beginArticleDisplay', $this->beginArticleDisplay, PDO::PARAM_INT);
-            $stmt->bindValue(':countArticleDisplay', $this->countArticleDisplay, PDO::PARAM_INT);
+            $stmt->bindValue(':beginPostsCount', $this->beginPostsCount, PDO::PARAM_INT);
+            $stmt->bindValue(':postsCountNumber', $this->postsCountNumber, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll();
         }
@@ -315,7 +317,7 @@ class DisplayPostsOnIndexByWordsSearchProcess extends DisplayPostsOnIndex implem
 /**
 * postで使用
 */
-class DisplayPostsOnPost extends DBConnection implements ISelect, ISetHttpGet
+class PostsDataUsedInPost extends DBConnection implements ISelect, ISetHttpGet
 {
     private $postId;
 

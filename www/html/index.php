@@ -27,60 +27,60 @@ nginxのconfファイルを書き換えることで対応。
 $tagsList = (new AllTagsData)->selectCommand();
 
 //1ページに表示するpostの件数
-$countArticleDisplay = 10;
+$totalPostsCount = 10;
 
 isset($_GET['pageID']) ? $pageID = intval($_GET['pageID']) : $pageID = 1;
 
 //表示を開始点を定義
 if($pageID > 1){
-    $beginArticleDisplay  = ($pageID * $countArticleDisplay) - $countArticleDisplay;
+    $beginPostsCount = ($pageID * $totalPostsCount) - $totalPostsCount;
 } else {
-    $beginArticleDisplay = 0;
+    $beginPostsCount = 0;
 }
 
 // 通常処理
 if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
     $searchWord   = '';
-    $displayPosts = new DisplayPostsOnIndexByNomalProcess();
-    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPosts->setCountArticleDisplay($countArticleDisplay);
-    $displayPosts->setTotalArticleCount();
-    $result            = $displayPosts->selectCommand();
-    $totalArticleCount = $displayPosts->getTotalArticleCount();
+    $displayPosts = new PostsDataUsedInIndexByNomalProcess();
+    $displayPosts->setBeginPostsCount($beginPostsCount);
+    $displayPosts->setPostsCountNumber($totalPostsCount);
+    $displayPosts->setTotalPostsCount();
+    $result          = $displayPosts->selectCommand();
+    $totalPostsCount = $displayPosts->getTotalPostsCount();
 }
 
 // タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord   = $_GET['tag'];
     $get          = $_GET;
-    $displayPosts = new DisplayPostsOnIndexByTagSearchProcess();
+    $displayPosts = new PostsDataUsedInIndexByTagSearchProcess();
     $displayPosts->setHttpGet($get);
-    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPosts->setCountArticleDisplay($countArticleDisplay);
-    $displayPosts->setTotalArticleCount();
-    $result            = $displayPosts->selectCommand();
-    $totalArticleCount = $displayPosts->getTotalArticleCount();
+    $displayPosts->setBeginPostsCount($beginPostsCount);
+    $displayPosts->setPostsCountNumber($totalPostsCount);
+    $displayPosts->setTotalPostsCount();
+    $result          = $displayPosts->selectCommand();
+    $totalPostsCount = $displayPosts->getTotalPostsCount();
 }
 
 // 検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
     $searchWord   = $_GET['searchWord'];
     $get          = $_GET;
-    $displayPosts = new DisplayPostsOnIndexByWordsSearchProcess();
-    $displayPosts->setSearchWords($searchWord);
+    $displayPosts = new PostsDataUsedInIndexByWordsSearchProcess();
+    $displayPosts->setHttpGet($get);
     $displayPosts->setWhereAndLikeClause();
-    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPosts->setCountArticleDisplay($countArticleDisplay);
-    $displayPosts->setTotalArticleCount();
-    $result            = $displayPosts->selectCommand();
-    $totalArticleCount = $displayPosts->getTotalArticleCount();
+    $displayPosts->setBeginPostsCount($beginPostsCount);
+    $displayPosts->setPostsCountNumber($totalPostsCount);
+    $displayPosts->setTotalPostsCount();
+    $result          = $displayPosts->selectCommand();
+    $totalPostsCount = $displayPosts->getTotalPostsCount();
 }
 
-if($totalArticleCount === 0 && $searchWord === ''){
+if($totalPostsCount === 0 && $searchWord === ''){
     $searchResultMessage = 'まだ投稿されていません。';
     $result              = [];
     $paginatorTags       = '';
-} elseif($totalArticleCount === 0) {
+} elseif($totalPostsCount === 0) {
     $searchResultMessage = $searchWord. ' に一致する結果は見つかりませんでした。';
     $result              = [];
     $paginatorTags       = '';
@@ -88,10 +88,10 @@ if($totalArticleCount === 0 && $searchWord === ''){
     //ページネーションの処理
     //Pagerのオプションを定義
     $paginatorOptions = [
-        'totalItems'            => $totalArticleCount,
+        'totalItems'            => $totalPostsCount,
         'mode'                  => 'Sliding',
         'delta'                 => 2,
-        'perPage'               => $countArticleDisplay,
+        'perPage'               => $totalPostsCount,
         'prevImg'               => '<i class="fas fa-chevron-left"></i>',
         'nextImg'               => '<i class="fas fa-chevron-right"></i>',
         'firstPageText'         => '<i class="fas fa-chevron-double-left"></i>',
