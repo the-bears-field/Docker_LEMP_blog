@@ -44,7 +44,7 @@ if (basename($_SERVER['SCRIPT_NAME']) == basename(__FILE__)) {
     <article class="main__wysiwyg wysiwyg">
         <form method="post" class="wysiwyg__form flex-direction-column">
             <input type="hidden" name="token" value="<? echo $token; ?>">
-            <input type="hidden" name="current-tags" value="<? echo $tags; ?>">
+            <input type="hidden" name="current-tags" value="<? echo htmlspecialchars($result['tags'], ENT_QUOTES); ?>">
             <input class="wysiwyg__title" type="text" name="title" placeholder="タイトルを入力して下さい。" value="<? if(isset($_GET["postID"])){echo htmlspecialchars($result['title'], ENT_QUOTES);} ?>">
             <textarea id="post-form" name="post"><? if(isset($_GET["postID"])){echo htmlspecialchars($result['post'], ENT_QUOTES);} ?></textarea>
             <input class="wysiwyg__tags" type="text" name="tags" placeholder="tags" value="<? echo htmlspecialchars($result['tags'], ENT_QUOTES); ?>">
