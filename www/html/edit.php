@@ -6,20 +6,6 @@ requireLoginedSession();
 
 date_default_timezone_set('Asia/Tokyo');
 
-function trimmingWords($string)
-{
-    // 全角スペースを半角へ
-    $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
-    // 両サイドのスペースを消す
-    $string = trim($string);
-    // 改行、タブをスペースに変換
-    $string = preg_replace('/[\n\r\t]/', ' ', $string);
-    // 複数スペースを一つのスペースに変換
-    $string = preg_replace('/\s{2,}/', ' ', $string);
-
-    return $string;
-}
-
 if (!isset($_POST['posting'])) {
     $token = sha1(uniqid(random_bytes(16), true));
     $_SESSION['token'] = $token;
@@ -30,23 +16,6 @@ if (isset($_GET['postID'])) {
     $postDisplay = new SinglePostsData;
     $postDisplay->setHttpGet($get);
     $result = $postDisplay->selectCommand();
-
-    // $postID = intval($_GET['postID']);
-    // $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, GROUP_CONCAT(tags.tag_name SEPARATOR ' ') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-    //                 LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-    //                 LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-    //                 LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-    //                 GROUP BY posts.post_id
-    //                 HAVING posts.post_id = :id";
-    // $pdo    = (new DatabaseConnection())->getPdo();
-    // $stmt   = $pdo->prepare($sqlCommand);
-    // $stmt->bindValue(':id', $postID, PDO::PARAM_INT);
-    // $stmt->execute();
-    // $stmt   = $stmt->fetch();
-    // $pdo    = null;
-    $title  = htmlspecialchars($result['title'], ENT_QUOTES);
-    $post   = htmlspecialchars($result['post'], ENT_QUOTES);
-    $tags   = $result['tags'];
 }
 
 if (!isset($_GET['postID']) || $result['user_id'] !== $_SESSION['id']) {
@@ -58,82 +27,17 @@ if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
         die("不正なアクセスが行われました");
     } else {
-        // $post        = $_POST;
-        // $session     = $_SESSION;
+        $post        = $_POST;
+        $session     = $_SESSION;
 
-        // $updatePost = new UpdatePostAndTags;
-        // $updatePost->setHttpPost($post);
-        // $updatePost->updateCommand();
-        $title       = $_POST['title'];
-        $post        = $_POST['post'];
-        $updatedTags = $_POST['tags'];
-        $currentTags = $_POST['current-tags'];
-        $updatedAt   = (new Datetime())->format('Y-m-d H:i:s');
-        if($updatedTags){
-            $updatedTags = trimmingWords($_POST['tags']);
-            $updatedTags = preg_split('/[\s]/', $updatedTags, -1, PREG_SPLIT_NO_EMPTY);
-            $updatedTags = array_unique($updatedTags);
-            $updatedTags = array_values($updatedTags);
-        } else {
-            $updatedTags = [];
-        }
+        $updatePost = new UpdatePostAndTags;
+        $updatePost->setHttpGet($get);
+        $updatePost->setHttpPost($post);
+        $updatePost->setSession($session);
+        $updatePost->updateCommand();
 
-        if($currentTags){
-            $currentTags = trimmingWords($_POST['current-tags']);
-            $currentTags = preg_split('/[\s]/', $currentTags, -1, PREG_SPLIT_NO_EMPTY);
-            $currentTags = array_unique($currentTags);
-            $currentTags = array_values($currentTags);
-        } else {
-            $currentTags = [];
-        }
-
-        try{
-            $pdo  = (new DatabaseConnection())->getPdo();
-            $stmt = $pdo->prepare('UPDATE posts SET title = :title, post = :post, updated_at = :updated_at WHERE post_id = :id');
-            $stmt->bindValue(':title', $title, PDO::PARAM_STR);
-            $stmt->bindValue(':post', $post, PDO::PARAM_STR);
-            $stmt->bindParam(':updated_at', $updatedAt, PDO::PARAM_STR);
-            $stmt->bindValue(':id', $postID, PDO::PARAM_STR);
-            $stmt->execute();
-
-
-            //tagの登録、削除作業
-            //$updatedTagsにあって$currentTagsにないものを追加
-            $addTags = array_diff($updatedTags, $currentTags);
-
-            if($addTags){
-                $addTags = array_values($addTags);
-
-                for($i = 0; $i < count($addTags); ++$i){
-                    $stmt = $pdo->prepare("CALL sp_add_tags(:tag_name, :post_id)");
-                    $stmt->bindValue(":tag_name", $addTags[$i], PDO::PARAM_STR);
-                    $stmt->bindValue(":post_id", $postID, PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-            }
-            //$currentTagsにあって$updatedTagsにないものを削除
-            $removeTags = array_diff($currentTags, $updatedTags);
-
-            if($removeTags){
-                $removeTags = array_values($removeTags);
-
-                for($i = 0; $i < count($removeTags); ++$i){
-                    $stmt = $pdo->prepare("CALL sp_remove_tags(:tag_name, :post_id)");
-                    $stmt->bindValue(":tag_name", $removeTags[$i], PDO::PARAM_STR);
-                    $stmt->bindValue(":post_id", $postID, PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-            }
-
-            $pdo  = null;
-            unset($_SESSION['token']);
-            header('Location: /');
-        } catch (PDOException $e) {
-            $errorMessage = 'データベースエラー';
-            //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
-            echo $e->getMessage();
-            die();
-        }
+        unset($_SESSION['token']);
+        header('Location: /');
     }
 }
 

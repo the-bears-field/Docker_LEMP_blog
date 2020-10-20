@@ -456,12 +456,14 @@ class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, IS
     }
 
     public function setHttpPost($post) {
-        $post['tags']         ? $updatedTags = toArray($post['tags'])         : $updatedTags = [];
-        $post['current-tags'] ? $currentTags = toArray($post['current-tags']) : $currentTags = [];
+        $post['tags']         ? $updatedTags = $this->toArray($post['tags'])         : $updatedTags = [];
+        $post['current-tags'] ? $currentTags = $this->toArray($post['current-tags']) : $currentTags = [];
+        $addTags           = array_diff($updatedTags, $currentTags);
+        $removeTags        = array_diff($currentTags, $updatedTags);
+        $this->addTags     = array_values($addTags);
+        $this->removeTags  = array_values($removeTags);
         $this->title       = $post['title'];
         $this->post        = $post['post'];
-        $this->addTags     = array_diff($updatedTags, $currentTags);
-        $this->removeTags  = array_diff($currentTags, $updatedTags);
     }
 
     public function setSession($session) {
@@ -469,7 +471,7 @@ class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, IS
     }
 
     public function setHttpGet($get){
-        $this->postId = $get;
+        $this->postId = $get['postID'];
     }
 
     public function updateCommand() {
@@ -486,6 +488,28 @@ class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, IS
             //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
             echo $e->getMessage();
             die();
+        }
+
+        if($this->addTags){
+            $addTags = $this->addTags;
+
+            for($i = 0; $i < count($addTags); ++$i){
+                $stmt = $pdo->prepare("CALL sp_add_tags(:tag_name, :post_id)");
+                $stmt->bindValue(":tag_name", $addTags[$i], PDO::PARAM_STR);
+                $stmt->bindValue(":post_id", $this->postId, PDO::PARAM_INT);
+                $stmt->execute();
+            }
+        }
+
+        if($this->removeTags){
+            $removeTags = $this->removeTags;
+
+            for($i = 0; $i < count($removeTags); ++$i){
+                $stmt = $pdo->prepare("CALL sp_remove_tags(:tag_name, :post_id)");
+                $stmt->bindValue(":tag_name", $removeTags[$i], PDO::PARAM_STR);
+                $stmt->bindValue(":post_id", $this->postId, PDO::PARAM_INT);
+                $stmt->execute();
+            }
         }
     }
 }
