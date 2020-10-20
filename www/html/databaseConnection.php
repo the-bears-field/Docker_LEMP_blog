@@ -214,25 +214,24 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
     private $searchWords;
     private $whereAndLikeClause;
 
-    public function setHttpGet($get)
-    {
-        $tags = $get['searchWord'];
-        // 全角スペースを半角へ
-        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
+    private function toArray($string) {
+        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
         // 両サイドのスペースを消す
-        $tags = trim($tags);
+        $string = trim($string);
         // 改行、タブをスペースに変換
-        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
+        $string = preg_replace('/[\n\r\t]/', ' ', $string);
         // 複数スペースを一つのスペースに変換
-        $tags = preg_replace('/\s{2,}/', ' ', $tags);
+        $string = preg_replace('/\s{2,}/', ' ', $string);
         //文字列を配列に変換
-        $array = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
-        //配列で重複している物を削除する
+        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
         $array = array_unique($array);
-        //Keyの再定義
         $array = array_values($array);
+        return $array;
+    }
 
-        $this->searchWords = $array;
+    public function setHttpGet($get) {
+        $searchWords = $get['searchWord'];
+        $this->searchWords = $this->toArray($searchWords);
     }
 
     public function getSearchWords() {
