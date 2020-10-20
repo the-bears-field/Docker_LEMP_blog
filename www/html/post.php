@@ -13,9 +13,10 @@ if (isset($_GET['postID'])) {
     $tagsList = (new AllTagsData)->selectCommand();
 
     $get         = $_GET;
-    $postDisplay = new PostsDataUsedInPost;
+    $postDisplay = new SinglePostsData;
     $postDisplay->setHttpGet($get);
     $result = $postDisplay->selectCommand();
+    $result['tags'] === null ? $result['tags'] = [] : $result['tags'] = explode(' ', $result['tags']);
 
     if (!$result) {
         header("Location: index.php");

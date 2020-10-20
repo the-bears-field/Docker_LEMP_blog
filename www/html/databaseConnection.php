@@ -6,32 +6,37 @@ $dotenv = (Dotenv\Dotenv::createImmutable(__DIR__))->load();
 
 interface ISelect
 {
-    function selectCommand();
+    public function selectCommand();
 }
 
 interface IInsert
 {
-    function insertCommand();
+    public function insertCommand();
 }
 
 interface IUpdate
 {
-    function updateCommand();
+    public function updateCommand();
 }
 
 interface IDelete
 {
-    function deleteCommand(): PDOStatement;
+    public function deleteCommand(): PDOStatement;
 }
 
 interface ISetHttpGet
 {
-    function setHttpGet($get);
+    public function setHttpGet($get);
 }
 
 interface ISetHttpPost
 {
-    function setHttpPost($post);
+    public function setHttpPost($post);
+}
+
+interface ISetSession
+{
+    public function setSession($session);
 }
 
 abstract class DBConnection
@@ -72,7 +77,7 @@ class DBConnctionFactory
 */
 class AllTagsData extends DBConnection implements ISelect
 {
-    function selectCommand() {
+    public function selectCommand() {
         $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
         $pdo        = $this->pdo;
         $tagsList   = $pdo->prepare($sqlCommand);
@@ -113,7 +118,7 @@ abstract class PostsDataUsedInIndex extends DBConnection
 
 class PostsDataUsedInIndexByNomalProcess extends PostsDataUsedInIndex implements ISelect
 {
-    function selectCommand() {
+    public function selectCommand() {
         $pdo = $this->pdo;
 
         if($this->totalPostsCount > 0){
@@ -138,11 +143,11 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
 {
     private $tag;
 
-    function setHttpGet($get){
+    public function setHttpGet($get){
         $this->tag = $get['tag'];
     }
 
-    function setTotalArticleCount() {
+    public function setTotalArticleCount() {
         $tag        = $this->tag;
         $sqlCommand = <<< 'SQL'
             SELECT COUNT( * ) FROM (
@@ -177,7 +182,7 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
         }
     }
 
-    function selectCommand() {
+    public function selectCommand() {
         $pdo                 = $this->pdo;
         $tag                 = $this->tag;
         $totalPostsCount   = $this->totalPostsCount;
@@ -209,7 +214,7 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
     private $searchWords;
     private $whereAndLikeClause;
 
-    function setHttpGet($get)
+    public function setHttpGet($get)
     {
         $tags = $get['searchWord'];
         // 全角スペースを半角へ
@@ -230,15 +235,15 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
         $this->searchWords = $array;
     }
 
-    function getSearchWords() {
+    public function getSearchWords() {
         return $this->searchWords;
     }
 
-    function getWhereAndLikeClause() {
+    public function getWhereAndLikeClause() {
         return $this->whereAndLikeClause;
     }
 
-    function setWhereAndLikeClause() {
+    public function setWhereAndLikeClause() {
         if(!isset($this->searchWords)){
             return '';
         }else{
@@ -266,7 +271,7 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
         }
     }
 
-    function setTotalArticleCount() {
+    public function setTotalArticleCount() {
         if(!$this->whereAndLikeClause){
             return false;
         }
@@ -286,7 +291,7 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
         $this->totalArticleCount = intval($totalPostsCount);
     }
 
-    function selectCommand() {
+    public function selectCommand() {
         $pdo         = $this->pdo;
         $searchWords = $this->searchWords;
 
@@ -315,17 +320,17 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
 }
 
 /**
-* postで使用
+* post,editで使用
 */
-class PostsDataUsedInPost extends DBConnection implements ISelect, ISetHttpGet
+class SinglePostsData extends DBConnection implements ISelect, ISetHttpGet
 {
     private $postId;
 
-    function setHttpGet($get) {
+    public function setHttpGet($get) {
         $this->postId = intval($get['postID']);
     }
 
-    function selectCommand() {
+    public function selectCommand() {
         $postId = $this->postId;
         if(!$postId){
             return false;
@@ -333,24 +338,18 @@ class PostsDataUsedInPost extends DBConnection implements ISelect, ISetHttpGet
 
         $pdo        = $this->pdo;
         $sqlCommand = <<< 'SQL'
-            SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+            SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ' ') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
             LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
             LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
             LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
             GROUP BY posts.post_id
             HAVING posts.post_id = :id
             SQL;
-        $stmt       = $pdo->prepare($sqlCommand);
+        $stmt   = $pdo->prepare($sqlCommand);
         $stmt->bindValue(':id', $postId, PDO::PARAM_INT);
         $stmt->execute();
-        $result     = $stmt->fetch();
-
-        if($result){
-            $result['tags'] === null ? $result['tags'] = [] : $result['tags'] = explode(',', $result['tags']);
-            return $result;
-        } else {
-            return false;
-        }
+        $result = $stmt->fetch();
+        return $result;
     }
 }
 
@@ -364,7 +363,7 @@ class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
     private $tags;
     private $userId;
 
-    function setHttpPost($post){
+    public function setHttpPost($post){
         $this->title = $post['title'];
         $this->post = $post['post'];
 
@@ -383,11 +382,11 @@ class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
         $this->tags = $tags;
     }
 
-    function setUserId($userId){
+    public function setUserId($userId){
         $this->userId = $userId;
     }
 
-    function insertCommand() {
+    public function insertCommand() {
         $title  = $this->title;
         $post   = $this->post;
         $userId = $this->userId;
@@ -426,77 +425,61 @@ class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
 /**
 * editで使用
 */
-class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpPost
+class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, ISetHttpPost, ISetSession
 {
     private $title;
     private $post;
-    private $tags;
+    private $addTags;
+    private $removeTags;
     private $userId;
     private $postId;
     private $updatedAt;
 
-    function __construct() {
+    public function __construct() {
+        parent::__construct();
         $this->updatedAt = (new Datetime())->format('Y-m-d H:i:s');
     }
 
-    function setHttpPost($post) {
-        $this->title = $post['title'];
-        $this->post = $post['post'];
-
-        $tags = $post['tags'];
-        // 全角スペースを半角へ
-        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
+    private function toArray($string) {
+        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
         // 両サイドのスペースを消す
-        $tags = trim($tags);
+        $string = trim($string);
         // 改行、タブをスペースに変換
-        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
+        $string = preg_replace('/[\n\r\t]/', ' ', $string);
         // 複数スペースを一つのスペースに変換
-        $tags = preg_replace('/\s{2,}/', ' ', $tags);
-        $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
-        $tags = array_unique($tags);
-        $tags = array_values($tags);
-        $this->tags = $tags;
+        $string = preg_replace('/\s{2,}/', ' ', $string);
+        //文字列を配列に変換
+        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
+        $array = array_unique($array);
+        $array = array_values($array);
+        return $array;
     }
 
-    function setTitle($title){
-        $this->title = $title;
+    public function setHttpPost($post) {
+        $post['tags']         ? $updatedTags = toArray($post['tags'])         : $updatedTags = [];
+        $post['current-tags'] ? $currentTags = toArray($post['current-tags']) : $currentTags = [];
+        $this->title       = $post['title'];
+        $this->post        = $post['post'];
+        $this->addTags     = array_diff($updatedTags, $currentTags);
+        $this->removeTags  = array_diff($currentTags, $updatedTags);
     }
 
-    function setPost($post){
-        $this->post = $post;
+    public function setSession($session) {
+        $this->userId = $session['id'];
     }
 
-    function setTags($tags){
-        // 全角スペースを半角へ
-        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
-        // 両サイドのスペースを消す
-        $tags = trim($tags);
-        // 改行、タブをスペースに変換
-        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
-        // 複数スペースを一つのスペースに変換
-        $tags = preg_replace('/\s{2,}/', ' ', $tags);
-        $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
-        $tags = array_unique($tags);
-        $tags = array_values($tags);
-        $this->tags = $tags;
+    public function setHttpGet($get){
+        $this->postId = $get;
     }
 
-    function setUserId($userId){
-        $this->userId = $userId;
-    }
-
-    function setPostId($postId){
-        $this->postId = $postId;
-    }
-
-    function updateCommand() {
+    public function updateCommand() {
         try{
             $pdo  = $this->pdo;
             $stmt = $pdo->prepare('UPDATE posts SET title = :title, post = :post, updated_at = :updated_at WHERE post_id = :id');
             $stmt->bindValue(':title', $this->title, PDO::PARAM_STR);
             $stmt->bindValue(':post', $this->post, PDO::PARAM_STR);
             $stmt->bindParam(':updated_at', $this->updatedAt, PDO::PARAM_STR);
-            $stmt->bindValue(':id', $postID, PDO::PARAM_STR);
+            $stmt->bindValue(':id', $this->postId, PDO::PARAM_STR);
             $stmt->execute();
         } catch (PDOException $e) {
             $errorMessage = "データベースエラー";

@@ -26,25 +26,30 @@ if (!isset($_POST['posting'])) {
 }
 
 if (isset($_GET['postID'])) {
-    $postID = intval($_GET['postID']);
-    $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, GROUP_CONCAT(tags.tag_name SEPARATOR ' ') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                    LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                    GROUP BY posts.post_id
-                    HAVING posts.post_id = :id";
-    $pdo    = (new DatabaseConnection())->getPdo();
-    $stmt   = $pdo->prepare($sqlCommand);
-    $stmt->bindValue(':id', $postID, PDO::PARAM_INT);
-    $stmt->execute();
-    $stmt   = $stmt->fetch();
-    $pdo    = null;
-    $title  = htmlspecialchars($stmt['title'], ENT_QUOTES);
-    $post   = htmlspecialchars($stmt['post'], ENT_QUOTES);
-    $tags   = $stmt['tags'];
+    $get         = $_GET;
+    $postDisplay = new SinglePostsData;
+    $postDisplay->setHttpGet($get);
+    $result = $postDisplay->selectCommand();
+
+    // $postID = intval($_GET['postID']);
+    // $sqlCommand  = "SELECT posts.post_id, posts.title, posts.post, GROUP_CONCAT(tags.tag_name SEPARATOR ' ') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+    //                 LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+    //                 LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+    //                 LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+    //                 GROUP BY posts.post_id
+    //                 HAVING posts.post_id = :id";
+    // $pdo    = (new DatabaseConnection())->getPdo();
+    // $stmt   = $pdo->prepare($sqlCommand);
+    // $stmt->bindValue(':id', $postID, PDO::PARAM_INT);
+    // $stmt->execute();
+    // $stmt   = $stmt->fetch();
+    // $pdo    = null;
+    $title  = htmlspecialchars($result['title'], ENT_QUOTES);
+    $post   = htmlspecialchars($result['post'], ENT_QUOTES);
+    $tags   = $result['tags'];
 }
 
-if (!isset($_GET['postID']) || $stmt['user_id'] !== $_SESSION['id']) {
+if (!isset($_GET['postID']) || $result['user_id'] !== $_SESSION['id']) {
     header('location: /');
     exit();
 }
@@ -53,12 +58,17 @@ if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
         die("不正なアクセスが行われました");
     } else {
-        $post        = $_POST;
+        // $post        = $_POST;
+        // $session     = $_SESSION;
 
-        $updatePost = new UpdatePostAndTags;
-        $updatePost->setHttpPost($post);
-        $updatePost->updateCommand();
-
+        // $updatePost = new UpdatePostAndTags;
+        // $updatePost->setHttpPost($post);
+        // $updatePost->updateCommand();
+        $title       = $_POST['title'];
+        $post        = $_POST['post'];
+        $updatedTags = $_POST['tags'];
+        $currentTags = $_POST['current-tags'];
+        $updatedAt   = (new Datetime())->format('Y-m-d H:i:s');
         if($updatedTags){
             $updatedTags = trimmingWords($_POST['tags']);
             $updatedTags = preg_split('/[\s]/', $updatedTags, -1, PREG_SPLIT_NO_EMPTY);
