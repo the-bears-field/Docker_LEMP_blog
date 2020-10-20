@@ -27,13 +27,13 @@ nginxのconfファイルを書き換えることで対応。
 $tagsList = (new AllTagsData)->selectCommand();
 
 //1ページに表示するpostの件数
-$totalPostsCount = 10;
+$postsCountNumber = 10;
 
 isset($_GET['pageID']) ? $pageID = intval($_GET['pageID']) : $pageID = 1;
 
 //表示を開始点を定義
 if($pageID > 1){
-    $beginPostsCount = ($pageID * $totalPostsCount) - $totalPostsCount;
+    $beginPostsCount = ($pageID * $postsCountNumber) - $postsCountNumber;
 } else {
     $beginPostsCount = 0;
 }
@@ -43,7 +43,7 @@ if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] ==
     $searchWord   = '';
     $displayPosts = new PostsDataUsedInIndexByNomalProcess();
     $displayPosts->setBeginPostsCount($beginPostsCount);
-    $displayPosts->setPostsCountNumber($totalPostsCount);
+    $displayPosts->setPostsCountNumber($postsCountNumber);
     $displayPosts->setTotalPostsCount();
     $result          = $displayPosts->selectCommand();
     $totalPostsCount = $displayPosts->getTotalPostsCount();
@@ -56,7 +56,7 @@ if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $displayPosts = new PostsDataUsedInIndexByTagSearchProcess();
     $displayPosts->setHttpGet($get);
     $displayPosts->setBeginPostsCount($beginPostsCount);
-    $displayPosts->setPostsCountNumber($totalPostsCount);
+    $displayPosts->setPostsCountNumber($postsCountNumber);
     $displayPosts->setTotalPostsCount();
     $result          = $displayPosts->selectCommand();
     $totalPostsCount = $displayPosts->getTotalPostsCount();
@@ -70,7 +70,7 @@ if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag
     $displayPosts->setHttpGet($get);
     $displayPosts->setWhereAndLikeClause();
     $displayPosts->setBeginPostsCount($beginPostsCount);
-    $displayPosts->setPostsCountNumber($totalPostsCount);
+    $displayPosts->setPostsCountNumber($postsCountNumber);
     $displayPosts->setTotalPostsCount();
     $result          = $displayPosts->selectCommand();
     $totalPostsCount = $displayPosts->getTotalPostsCount();
@@ -91,7 +91,7 @@ if($totalPostsCount === 0 && $searchWord === ''){
         'totalItems'            => $totalPostsCount,
         'mode'                  => 'Sliding',
         'delta'                 => 2,
-        'perPage'               => $totalPostsCount,
+        'perPage'               => $postsCountNumber,
         'prevImg'               => '<i class="fas fa-chevron-left"></i>',
         'nextImg'               => '<i class="fas fa-chevron-right"></i>',
         'firstPageText'         => '<i class="fas fa-chevron-double-left"></i>',
