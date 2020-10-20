@@ -147,7 +147,7 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
         $this->tag = $get['tag'];
     }
 
-    public function setTotalArticleCount() {
+    public function setTotalPostsCount() {
         $tag        = $this->tag;
         $sqlCommand = <<< 'SQL'
             SELECT COUNT( * ) FROM (
@@ -163,7 +163,7 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
         $isFindTag  = $isFindTag->fetchColumn();
 
         if(!$isFindTag){
-            $this->totalArticleCount = 0;
+            $this->totalPostsCount = 0;
         } else {
             $sqlCommand = <<< 'SQL'
                 SELECT COUNT( * ) FROM (
@@ -178,15 +178,15 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
             $totalPostsCount->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
             $totalPostsCount->execute();
             $totalPostsCount       = $totalPostsCount->fetchColumn();
-            $this->totalArticleCount = intval($totalPostsCount);
+            $this->totalPostsCount = intval($totalPostsCount);
         }
     }
 
     public function selectCommand() {
-        $pdo                 = $this->pdo;
-        $tag                 = $this->tag;
-        $totalPostsCount   = $this->totalPostsCount;
-        $beginPostsCount = $this->beginPostsCount;
+        $pdo              = $this->pdo;
+        $tag              = $this->tag;
+        $totalPostsCount  = $this->totalPostsCount;
+        $beginPostsCount  = $this->beginPostsCount;
         $postsCountNumber = $this->postsCountNumber;
 
         if($totalPostsCount > 0 || $totalPostsCount){
@@ -270,15 +270,15 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
         }
     }
 
-    public function setTotalArticleCount() {
+    public function setTotalPostsCount() {
         if(!$this->whereAndLikeClause){
             return false;
         }
 
         $pdo               = $this->pdo;
-        $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts";
+        $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts ";
         $sqlCommand       .= $this->whereAndLikeClause;
-        $totalPostsCount = $pdo->prepare($sqlCommand);
+        $totalPostsCount   = $pdo->prepare($sqlCommand);
         $searchWords       = $this->searchWords;
 
         for ($i = 0; $i < count($searchWords); $i++) {
@@ -287,7 +287,7 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
 
         $totalPostsCount->execute();
         $totalPostsCount       = $totalPostsCount->fetchColumn();
-        $this->totalArticleCount = intval($totalPostsCount);
+        $this->totalPostsCount = intval($totalPostsCount);
     }
 
     public function selectCommand() {
