@@ -513,6 +513,34 @@ class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, IS
     }
 }
 
+/**
+* loginで使用
+*/
+class UserDataUsedInLogin extends DBConnection implements ISelect, ISetHttpPost
+{
+    private $email;
+
+    public function setHttpPost($post) {
+        $this->email = $post['email'];
+    }
+
+    public function selectCommand() {
+        try {
+            $pdo    = $this->pdo;
+            $stmt   = $pdo->prepare('SELECT * FROM user WHERE email = :email');
+            $stmt->bindValue(':email', $this->email, PDO::PARAM_STR);
+            $stmt->execute();
+            $result =  $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result;
+        } catch(PDOException $e) {
+            $errorMessage = 'データベースエラー';
+            //$e->getMessage() でエラー内容を参照可能（デバッグ時のみ表示）
+            //echo $e->getMessage();
+            die();
+        }
+    }
+}
+
 
 /**
 * クラス設計が完成し次第、削除予定
