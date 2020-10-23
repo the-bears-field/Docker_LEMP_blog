@@ -27,59 +27,31 @@ if (isset($_POST['sending'])) {
 
     //ユーザー名変更
     if (isset($_POST['username']) && isset($_POST['username']) !== $_SESSION['name']) {
-        $userName = $_POST['username'];
+        $post    = $_POST;
+        $session = $_SESSION;
 
-        try {
-            $pdo  = (new DatabaseConnection())->getPdo();
-            $stmt = $pdo->prepare("UPDATE user SET name = :userName, updated_at = :updated_at WHERE user_id = :userId");
-            $stmt->bindValue(':userName', $userName, PDO::PARAM_STR);
-            $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
-            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            $pdo  = null;
-            $_SESSION['name'] = $userName;
-        } catch (PDOException $e) {
-            console.log($e);
-        }
+        $userData = new UserDataUsedInAccountByEditUserNameProcess;
+        $userData->setSession($session);
+        $userData->setHttpPost($post);
+        $userData->updateCommand();
     }
 
     //email変更
     if (isset($_POST['email']) && isset($_POST['password'])) {
-        $email    = $_POST['email'];
-        $password = $_POST['password'];
+        $post    = $_POST;
+        $session = $_SESSION;
 
-        try {
-            $pdo  = (new DatabaseConnection())->getPdo();
-            $stmt = $pdo->prepare("SELECT password FROM user WHERE user_id = :userId");
-            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            $correntPassword = $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            console.log($e);
-        }
-
-        if (password_verify($password, $correntPassword)) {
-            try {
-                $stmt = $pdo->prepare("UPDATE user SET email = :email, updated_at = :updated_at WHERE user_id = :userId");
-                $stmt->bindValue(':email', $email, PDO::PARAM_STR);
-                $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
-                $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-                $stmt->execute();
-                $pdo  = null;
-                $_SESSION['email'] = $email;
-            } catch (PDOException $e) {
-                console.log($e);
-            }
-        }
-
+        $userData = new UserDataUsedInAccountByEditEmailProcess;
+        $userData->setSession($session);
+        $userData->setHttpPost($post);
+        $userData->updateCommand();
     }
 
     //パスワード変更
     if (isset($_POST['current-password'])
      && isset($_POST['new-password'])
      && isset($_POST['password-confirmation'])
-     && $_POST['new-password'] === $_POST['password-confirmation']
-    ) {
+     && $_POST['new-password'] === $_POST['password-confirmation']) {
         $password    = $_POST['current-password'];
         $newPassword = $_POST['new-password'];
 
@@ -132,39 +104,44 @@ if (isset($_POST['sending'])) {
             rmdir('pictures/'. $loggedInUser);
         }
 
-        try {
-            $pdo  = (new DatabaseConnection())->getPdo();
-            $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = :userId");
-            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-        } catch (PDOException $e) {
-            console.log($e);
-        }
+        $session = $_SESSION;
 
-        //記事の削除に伴い、タグの関連付けも削除
-        $sql = "DELETE pt FROM post_tags AS pt
-                LEFT JOIN user_uploaded_posts AS up ON pt.post_id = up.post_id
-                WHERE up.user_id = :userId";
+        $userData = new UserDataUsedInAccountByDeactivateUserProcess;
+        $userData->setSession($session);
+        $userData->deleteCommand();
+        // try {
+        //     $pdo  = (new DatabaseConnection())->getPdo();
+        //     $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = :userId");
+        //     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        //     $stmt->execute();
+        // } catch (PDOException $e) {
+        //     console.log($e);
+        // }
 
-        try {
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-        } catch (PDOException $e) {
-            console.log($e);
-        }
+        // //記事の削除に伴い、タグの関連付けも削除
+        // $sql = "DELETE pt FROM post_tags AS pt
+        //         LEFT JOIN user_uploaded_posts AS up ON pt.post_id = up.post_id
+        //         WHERE up.user_id = :userId";
 
-        //削除対象ユーザーが投稿した記事を全て削除する
-        $sql = "DELETE p FROM posts AS p
-                LEFT JOIN user_uploaded_posts AS up ON p.post_id = up.post_id
-                WHERE up.user_id = :userId";
-        try {
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-        } catch (PDOException $e) {
-            console.log($e);
-        }
+        // try {
+        //     $stmt = $pdo->prepare($sql);
+        //     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        //     $stmt->execute();
+        // } catch (PDOException $e) {
+        //     console.log($e);
+        // }
+
+        // //削除対象ユーザーが投稿した記事を全て削除する
+        // $sql = "DELETE p FROM posts AS p
+        //         LEFT JOIN user_uploaded_posts AS up ON p.post_id = up.post_id
+        //         WHERE up.user_id = :userId";
+        // try {
+        //     $stmt = $pdo->prepare($sql);
+        //     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        //     $stmt->execute();
+        // } catch (PDOException $e) {
+        //     console.log($e);
+        // }
 
         //ログアウト実行(セッションのリセット)
         $_SESSION = [];

@@ -21,7 +21,7 @@ interface IUpdate
 
 interface IDelete
 {
-    public function deleteCommand(): PDOStatement;
+    public function deleteCommand();
 }
 
 interface ISetHttpGet
@@ -541,6 +541,209 @@ class UserDataUsedInLogin extends DBConnection implements ISelect, ISetHttpPost
     }
 }
 
+/**
+* accountで使用
+*/
+abstract class UserDataUsedInAccount extends DBConnection implements ISetSession
+{
+    protected $userId;
+    protected $updatedAt;
+
+    public function __construct() {
+        parent::__construct();
+        $this->updatedAt = (new Datetime())->format('Y-m-d H:i:s');
+    }
+
+    public function setSession($session) {
+        $this->userId = $session['id'];
+    }
+}
+
+class UserDataUsedInAccountByEditUserNameProcess extends UserDataUsedInAccount implements IUpdate, ISetHttpPost
+{
+    private $userName;
+
+    public function setHttpPost($post) {
+        $this->userName = $post['username'];
+    }
+
+    public function updateCommand() {
+        $userName   = $this->userName;
+        $updatedAt  = $this->updatedAt;
+        $userId     = $this->userId;
+        $sqlCommand = <<<'SQL'
+            UPDATE user
+            SET name = :userName, updated_at = :updated_at
+            WHERE user_id = :userId
+            SQL;
+
+        try{
+            $pdo  = $this->pdo;
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userName', $userName, PDO::PARAM_STR);
+            $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $pdo  = null;
+            $_SESSION['name'] = $userName;
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+}
+
+class UserDataUsedInAccountByEditEmailProcess extends UserDataUsedInAccount implements IUpdate, ISetHttpPost
+{
+    private $email;
+    private $password;
+
+    public function setHttpPost($post) {
+        $this->email    = $post['email'];
+        $this->password = $post['password'];
+    }
+
+    public function updateCommand() {
+        $email      = $this->email;
+        $password   = $this->password;
+        $updatedAt  = $this->updatedAt;
+        $userId     = $this->userId;
+        $sqlCommand = <<<'SQL'
+            SELECT password FROM user
+            WHERE user_id = :userId
+            SQL;
+
+        try {
+            $pdo  = $this->pdo;
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $correntPassword = $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        if (password_verify($password, $correntPassword)) {
+            $sqlCommand = <<<'SQL'
+                UPDATE user
+                SET email = :email, updated_at = :updated_at
+                WHERE user_id = :userId
+                SQL;
+
+            try {
+                $stmt = $pdo->prepare($sqlCommand);
+                $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+                $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
+                $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                $stmt->execute();
+                $pdo  = null;
+                $_SESSION['email'] = $email;
+            } catch (PDOException $e) {
+                console.log($e);
+            }
+        }
+    }
+}
+
+class UserDataUsedInAccountByEditPasswordProcess extends UserDataUsedInAccount implements IUpdate, ISetHttpPost
+{
+    private $password;
+    private $newPassword;
+
+    public function setHttpPost($post) {
+        $this->password    = $post['current-password'];
+        $this->newPassword = $post['new-password'];
+    }
+
+    public function updateCommand() {
+        $password    = $this->password;
+        $newPassword = $this->newPassword;
+        $updatedAt   = $this->updatedAt;
+        $userId      = $this->userId;
+        $sqlCommand  = <<<'SQL'
+            SELECT password FROM user
+            WHERE user_id = :userId
+            SQL;
+
+        try {
+            $pdo  = $this->pdo;
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $correntPassword = $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        if (password_verify($password, $correntPassword)) {
+            $sqlCommand = <<<'SQL'
+                UPDATE user
+                SET password = :password, updated_at = :updated_at
+                WHERE user_id = :userId
+                SQL;
+
+            try {
+                $stmt = $pdo->prepare($sqlCommand);
+                $stmt->bindValue(':password', password_hash($newPassword, PASSWORD_DEFAULT), PDO::PARAM_STR);
+                $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
+                $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                $stmt->execute();
+                $pdo  = null;
+            } catch (PDOException $e) {
+                console.log($e);
+            }
+        }
+    }
+}
+
+class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount implements IDelete, ISetSession
+{
+    public function deleteCommand() {
+        $userId     = $this->userId;
+        $sqlCommand = <<< 'SQL'
+            DELETE FROM user WHERE user_id = :userId
+            SQL;
+
+        try {
+            $pdo = $this->pdo;
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        //記事の削除に伴い、タグの関連付けも削除
+        $sqlCommand = <<< 'SQL'
+            DELETE pt FROM post_tags AS pt
+            LEFT JOIN user_uploaded_posts AS up ON pt.post_id = up.post_id
+            WHERE up.user_id = :userId
+            SQL;
+
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        //削除対象ユーザーが投稿した記事を全て削除する
+        $sqlCommand = <<< 'SQL'
+            DELETE p FROM posts AS p
+            LEFT JOIN user_uploaded_posts AS up ON p.post_id = up.post_id
+            WHERE up.user_id = :userId
+            SQL;
+
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+    }
+}
 
 /**
 * クラス設計が完成し次第、削除予定
