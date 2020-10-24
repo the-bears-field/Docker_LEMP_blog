@@ -1,4 +1,4 @@
-FROM node:latest as node
+FROM node:12.19.0 as node
 
 FROM php:7.3-fpm
 COPY php.ini /usr/local/etc/php/
