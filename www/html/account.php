@@ -52,31 +52,13 @@ if (isset($_POST['sending'])) {
      && isset($_POST['new-password'])
      && isset($_POST['password-confirmation'])
      && $_POST['new-password'] === $_POST['password-confirmation']) {
-        $password    = $_POST['current-password'];
-        $newPassword = $_POST['new-password'];
+        $post    = $_POST;
+        $session = $_SESSION;
 
-        try {
-            $pdo  = (new DatabaseConnection())->getPdo();
-            $stmt = $pdo->prepare("SELECT password FROM user WHERE user_id = :userId");
-            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            $correntPassword = $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            console.log($e);
-        }
-
-        if (password_verify($password, $correntPassword)) {
-            try {
-                $stmt = $pdo->prepare("UPDATE user SET password = :password, updated_at = :updated_at WHERE user_id = :userId");
-                $stmt->bindValue(':password', password_hash($newPassword, PASSWORD_DEFAULT), PDO::PARAM_STR);
-                $stmt->bindValue(':updated_at', $updatedAt, PDO::PARAM_STR);
-                $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-                $stmt->execute();
-                $pdo  = null;
-            } catch (PDOException $e) {
-                console.log($e);
-            }
-        }
+        $userData = new UserDataUsedInAccountByEditPasswordProcess;
+        $userData->setSession($session);
+        $userData->setHttpPost($post);
+        $userData->updateCommand();
     }
 
     //アカウント削除処理
