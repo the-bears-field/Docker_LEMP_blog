@@ -699,12 +699,13 @@ class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount
 {
     public function deleteCommand() {
         $userId     = $this->userId;
+        $pdo        = $this->pdo;
+
+        //ユーザ削除
         $sqlCommand = <<< 'SQL'
             DELETE FROM user WHERE user_id = :userId
             SQL;
-
         try {
-            $pdo = $this->pdo;
             $stmt = $pdo->prepare($sqlCommand);
             $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
             $stmt->execute();
@@ -727,6 +728,59 @@ class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount
             console.log($e);
         }
 
+        //記事の削除に伴い、1件も関連付けされていないタグを削除
+        //post_tagからtag_id取得
+        $sqlCommand = <<< 'SQL'
+            SELECT tag_id FROM post_tags
+            SQL;
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->execute();
+            $remainTags = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $remainTags = array_unique($remainTags);
+            $remainTags = array_values($remainTags);
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        //tagsからtag_id取得
+        $sqlCommand = <<< 'SQL'
+            SELECT tag_id FROM tags
+            SQL;
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->execute();
+            $currentTags = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        //削除対象を選定
+        $removeTags = array_diff($currentTags, $remainTags);
+
+        foreach($removeTags as &$removeTag){
+            $removeTag = intval($removeTag);
+        }
+
+        //ループを回してtagを削除
+        if ($removeTags) {
+            for($i = 0; $i < count($removeTags); $i++){
+                $sqlCommand = <<< 'SQL'
+                    DELETE FROM tags WHERE tag_id = :tagId
+                    SQL;
+                $stmt = $pdo->prepare($sqlCommand);
+                $stmt->bindValue(':tagId', $removeTags[$i], PDO::PARAM_INT);
+                $stmt->execute();
+            }
+        }
+
+        $sqlCommand = <<< 'SQL'
+            DELETE FROM tags WHERE tag_id = :tagId
+            SQL;
+        $stmt = $pdo->prepare($sqlCommand);
+        $stmt->bindValue(':tagId', 10, PDO::PARAM_INT);
+        $stmt->execute();
+
         //削除対象ユーザーが投稿した記事を全て削除する
         $sqlCommand = <<< 'SQL'
             DELETE p FROM posts AS p
@@ -742,6 +796,19 @@ class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount
             console.log($e);
         }
 
+        //postsとuserの関連テーブルから削除対象となっているユーザを削除
+        $sqlCommand = <<< 'SQL'
+            DELETE  FROM user_uploaded_posts
+            WHERE user_id = :userId
+            SQL;
+
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
     }
 }
 

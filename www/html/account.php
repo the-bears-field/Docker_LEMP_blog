@@ -109,39 +109,6 @@ if (isset($_POST['sending'])) {
         $userData = new UserDataUsedInAccountByDeactivateUserProcess;
         $userData->setSession($session);
         $userData->deleteCommand();
-        // try {
-        //     $pdo  = (new DatabaseConnection())->getPdo();
-        //     $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = :userId");
-        //     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-        //     $stmt->execute();
-        // } catch (PDOException $e) {
-        //     console.log($e);
-        // }
-
-        // //記事の削除に伴い、タグの関連付けも削除
-        // $sql = "DELETE pt FROM post_tags AS pt
-        //         LEFT JOIN user_uploaded_posts AS up ON pt.post_id = up.post_id
-        //         WHERE up.user_id = :userId";
-
-        // try {
-        //     $stmt = $pdo->prepare($sql);
-        //     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-        //     $stmt->execute();
-        // } catch (PDOException $e) {
-        //     console.log($e);
-        // }
-
-        // //削除対象ユーザーが投稿した記事を全て削除する
-        // $sql = "DELETE p FROM posts AS p
-        //         LEFT JOIN user_uploaded_posts AS up ON p.post_id = up.post_id
-        //         WHERE up.user_id = :userId";
-        // try {
-        //     $stmt = $pdo->prepare($sql);
-        //     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-        //     $stmt->execute();
-        // } catch (PDOException $e) {
-        //     console.log($e);
-        // }
 
         //ログアウト実行(セッションのリセット)
         $_SESSION = [];
