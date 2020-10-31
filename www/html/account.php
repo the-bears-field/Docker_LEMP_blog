@@ -124,12 +124,9 @@ if (!isset($_SESSION['id'])) {
 }
 
 if (isset($_SESSION['id'])) {
-    $pdo  = (new DatabaseConnection())->getPdo();
-    $stmt = $pdo->prepare("SELECT * FROM user WHERE user_id = :id");
-    $stmt->bindValue(":id", $_SESSION['id'], PDO::PARAM_STR);
-    $stmt->execute();
-    $stmt = $stmt->fetch();
-    $pdo  =  NULL;
+    $userData = new UserDataUsedInAccountByNormalProcess;
+    $userData->setSession($_SESSION);
+    $stmt     = $userData->selectCommand();
 }
 
 include_once __DIR__. '/views/accountView.php';

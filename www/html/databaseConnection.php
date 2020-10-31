@@ -695,7 +695,7 @@ class UserDataUsedInAccountByEditPasswordProcess extends UserDataUsedInAccount i
     }
 }
 
-class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount implements IDelete, ISetSession
+class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount implements IDelete
 {
     public function deleteCommand() {
         $userId     = $this->userId;
@@ -812,6 +812,21 @@ class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount
     }
 }
 
+class UserDataUsedInAccountByNormalProcess extends UserDataUsedInAccount implements ISelect
+{
+    public function selectCommand() {
+        $pdo    = $this->pdo;
+        $userId = $this->userId;
+        try {
+            $stmt   = $pdo->prepare("SELECT name, email FROM user WHERE user_id = :userId");
+            $stmt->bindValue(":userId", $userId, PDO::PARAM_STR);
+            $stmt->execute();
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+}
 /**
 * クラス設計が完成し次第、削除予定
 */
