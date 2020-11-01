@@ -827,6 +827,23 @@ class UserDataUsedInAccountByNormalProcess extends UserDataUsedInAccount impleme
         }
     }
 }
+
+class UserDataUsedInAccountByPreDeactivateUserProcess extends UserDataUsedInAccount implements ISelect
+{
+    public function selectCommand() {
+        $pdo    = $this->pdo;
+        $userId = $this->userId;
+        try {
+            $stmt   = $pdo->prepare("SELECT password FROM user WHERE user_id = :userId");
+            $stmt->bindValue(":userId", $userId, PDO::PARAM_STR);
+            $stmt->execute();
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+}
+
 /**
 * クラス設計が完成し次第、削除予定
 */
