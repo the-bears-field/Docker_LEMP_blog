@@ -845,6 +845,97 @@ class UserDataUsedInAccountByPreDeactivateUserProcess extends UserDataUsedInAcco
 }
 
 /**
+* deleteで使用
+*/
+class UserDataUsedInDelete extends DBConnection implements ISelect, IDelete, ISetHttpGet, ISetSession
+{
+    private $userId;
+    private $postId;
+    private $tags;
+
+    public function setHttpGet ($get) {
+        $this->postId = $get['postID'];
+    }
+
+    public function setSession ($session) {
+        $this->userId = $session['id'];
+    }
+
+    public function selectCommand () {
+        $sqlCommand = <<< 'SQL'
+            SELECT posts.post_id,
+                   posts.title,
+                   posts.post,
+                   posts.created_at,
+                   posts.updated_at,
+                   GROUP_CONCAT(tags.tag_name SEPARATOR ' ') AS tags,
+                   user_uploaded_posts.user_id AS user_id
+            FROM posts
+            LEFT JOIN post_tags ON posts.post_id = post_tags.post_id AND posts.post_id = :id
+            LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+            LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+            GROUP BY posts.post_id
+            HAVING posts.post_id = :id
+            SQL;
+        $postId = $this->postId;
+        $pdo    = $this->pdo;
+
+        try{
+            $stmt   = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(":id", $postId, PDO::PARAM_STR);
+            $stmt->execute();
+            $result = $stmt->fetch();
+            $result['tags'] === null ? $this->tags = [] : $this->tags = explode(' ', $result['tags']);
+            return $result;
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+
+    public function deleteCommand () {
+        $sqlCommand = <<< 'SQL'
+            DELETE FROM posts WHERE post_id = :post_id
+            SQL;
+        $userId = $this->userId;
+        $postId = $this->postId;
+        $tags   = $this->tags;
+        $pdo    = $this->pdo;
+
+        try{
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(":post_id", $postId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        $sqlCommand = <<< 'SQL'
+            DELETE FROM user_uploaded_posts
+            WHERE user_id = :user_id AND post_id = :post_id
+            SQL;
+
+        try{
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(":user_id", $userId, PDO::PARAM_INT);
+            $stmt->bindValue(":post_id", $postId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        for ($i = 0; $i < count($tags); ++$i) {
+            $sqlCommand = <<< 'SQL'
+                CALL sp_remove_tags(:tag_name, :post_id)
+                SQL;
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':tag_name', $tags[$i], PDO::PARAM_STR);
+            $stmt->bindValue(':post_id', $postId, PDO::PARAM_INT);
+            $stmt->execute();
+        }
+    }
+}
+
+/**
 * クラス設計が完成し次第、削除予定
 */
 class DatabaseConnection
