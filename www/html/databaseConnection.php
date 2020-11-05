@@ -936,6 +936,73 @@ class UserDataUsedInDelete extends DBConnection implements ISelect, IDelete, ISe
 }
 
 /**
+* signupで使用
+*/
+class UserDataUsedInSignUp extends DBConnection implements ISelect, IInsert, IsetHttpPost
+{
+    private $username;
+    private $email;
+    private $password;
+
+    public function setHttpPost ($post) {
+        $this->username = $post['username'];
+        $this->email    = $post['email'];
+        $this->password = $post['password'];
+    }
+
+    public function setUrlToken ($urlToken) {
+        $this->urlToken = $urlToken;
+    }
+
+    public function selectCommand () {
+        $pdo        = $this->pdo;
+        $email      = $this->email;
+        $sqlCommand = <<< 'SQL'
+            SELECT email FROM user WHERE email = :email
+            SQL;
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(":email", $email, PDO::PARAM_STR);
+            $stmt->execute();
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+
+    public function insertCommand () {
+        $pdo      = $this->pdo;
+        $username = $this->username;
+        $email    = $this->email;
+        $password = $this->password;
+        $urlToken = $this->urlToken;
+
+        $sqlCommand = <<< 'SQL'
+            INSERT INTO temporary_users(name, email, password, url_token)
+            VALUES(:name, :email, :password, :url_token)
+            SQL;
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':name', $username, PDO::PARAM_STR);
+            $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+            $stmt->bindValue(':password', password_hash($password, PASSWORD_DEFAULT), PDO::PARAM_STR);
+            $stmt->bindValue(':url_token', $urlToken, PDO::PARAM_STR);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+}
+
+/**
+* registrationで使用
+*/
+// class UserDataUsedInRegistration extends DBConnection implements ISelect, IInsert, IsetHttpPost
+// {
+
+// }
+
+/**
 * クラス設計が完成し次第、削除予定
 */
 class DatabaseConnection
