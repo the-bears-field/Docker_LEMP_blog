@@ -997,10 +997,96 @@ class UserDataUsedInSignUp extends DBConnection implements ISelect, IInsert, Ise
 /**
 * registrationで使用
 */
-// class UserDataUsedInRegistration extends DBConnection implements ISelect, IInsert, IsetHttpPost
-// {
+class UserDataUsedInRegistration extends DBConnection implements ISelect, IInsert, IDelete, IsetHttpGet
+{
+    private $name;
+    private $email;
+    private $password;
+    private $urlToken;
+    private $deadlineDate;
 
-// }
+    public function __construct () {
+        parent::__construct();
+        //24時間前の時刻を取得
+        $this->deadlineDate = date("Y/m/d H:i:s", strtotime('-1 day'));
+    }
+
+    public function setHttpGet ($get) {
+        $this->urlToken = $get['url_token'];
+    }
+
+    public function getDeadlineDate () {
+        return $this->deadlineDate;
+    }
+
+    public function selectCommand () {
+        $pdo        = $this->pdo;
+        $urlToken   = $this->urlToken;
+        $sqlCommand = <<< 'SQL'
+            SELECT * FROM temporary_users WHERE url_token = :url_token
+            SQL;
+        $stmt = $pdo->prepare($sqlCommand);
+        $stmt->bindValue(':url_token', $urlToken, PDO::PARAM_STR);
+        $stmt->execute();
+        $temporaryUser  = $stmt->fetch();
+        $this->name     = $temporaryUser['name'];
+        $this->email    = $temporaryUser['email'];
+        $this->password = $temporaryUser['password'];
+        return $temporaryUser;
+    }
+
+    public function insertCommand () {
+        $pdo      = $this->pdo;
+        $name     = $this->name;
+        $email    = $this->email;
+        $password = $this->password;
+        $urlToken = $this->urlToken;
+
+        //Userテーブルに登録
+        $sqlCommand = <<< 'SQL'
+            INSERT INTO user(name, email, password) VALUES(:name, :email, :password)
+            SQL;
+
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':name', $name, PDO::PARAM_STR);
+            $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+            $stmt->bindValue(':password', $password, PDO::PARAM_STR);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+
+        //仮ユーザーテーブルから該当するレコードを削除
+        $sqlCommand = <<< 'SQL'
+            DELETE FROM temporary_users WHERE url_token = :url_token
+            SQL;
+
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':url_token', $urlToken, PDO::PARAM_STR);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+
+    public function deleteCommand () {
+        $pdo          = $this->pdo;
+        $deadlineDate = $this->deadlineDate;
+        $sqlCommand   = <<< 'SQL'
+            DELETE FROM temporary_users WHERE created_at < :deadlineDate
+            SQL;
+
+        try {
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':deadlineDate', $deadlineDate, PDO::PARAM_STR);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            console.log($e);
+        }
+    }
+}
 
 /**
 * クラス設計が完成し次第、削除予定
