@@ -39,7 +39,7 @@ interface ISetSession
     public function setSession($session);
 }
 
-abstract class DBConnection
+abstract class DBConnector
 {
     protected $pdo;
 
@@ -67,15 +67,25 @@ abstract class DBConnection
     }
 }
 
-class DBConnctionFactory
+class DBConnctorFactory
 {
-    
+    private $path;
+
+    public function __construct () {
+        $path = pathinfo(__FILE__, PATHINFO_BASENAME);
+
+        switch ($path) {
+            case 'index.php':
+                // $dbConnector = new
+                break;
+        }
+    }
 }
 
 /**
 * indexで使用
 */
-class AllTagsData extends DBConnection implements ISelect
+class AllTagsData extends DBConnector implements ISelect
 {
     public function selectCommand() {
         $sqlCommand = 'SELECT tag_name FROM tags ORDER BY tags.tag_name ASC';
@@ -86,26 +96,38 @@ class AllTagsData extends DBConnection implements ISelect
     }
 }
 
-
-abstract class PostsDataUsedInIndex extends DBConnection
+class PostsDataUsedInIndex extends DBConnector implements ISelect
 {
-    protected $beginPostsCount;
-    protected $postsCountNumber;
-    protected $totalPostsCount;
+    private $beginPostsCount;
+    private $postsCountNumber;
+    private $totalPostsCount;
+    private $tag;
+    private $searchWords;
+    private $whereAndLikeClause;
 
-    public function setBeginPostsCount($beginPostsCount) {
-        $this->beginPostsCount = $beginPostsCount;
+    public function __construct () {
+        parent::__construct();
+
+        if (!$_GET) {
+            $this->setTotalPostsCountByNormalProcess();
+            return;
+        }
+
+        if ($_GET && isset($_GET['tag'])) {
+            $this->tag = $_GET['tag'];
+            $this->setTotalPostsCountByTagSearchProcess();
+            return;
+        }
+
+        if ($_GET && isset($_GET['searchWord'])) {
+            $this->searchWords = $this->toArray($_GET['searchWord']);
+            $this->setWhereAndLikeClause();
+            $this->setTotalPostsCountByWordsSearchProcess();
+            return;
+        }
     }
 
-    public function setPostsCountNumber($postsCountNumber) {
-        $this->postsCountNumber = $postsCountNumber;
-    }
-
-    public function getTotalPostsCount() {
-        return $this->totalPostsCount;
-    }
-
-    public function setTotalPostsCount() {
+    private function setTotalPostsCountByNormalProcess () {
         $sqlCommand            = "SELECT COUNT(posts.post_id) FROM posts";
         $pdo                   = $this->pdo;
         $totalPostsCount       = $pdo->prepare($sqlCommand);
@@ -114,40 +136,9 @@ abstract class PostsDataUsedInIndex extends DBConnection
         $this->totalPostsCount = intval($totalPostsCount);
         $pdo                   = null;
     }
-}
 
-class PostsDataUsedInIndexByNomalProcess extends PostsDataUsedInIndex implements ISelect
-{
-    public function selectCommand() {
-        $pdo = $this->pdo;
-
-        if($this->totalPostsCount > 0){
-            $sqlCommand = <<< 'SQL'
-                SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                GROUP BY posts.post_id
-                ORDER BY post_id DESC LIMIT :beginPostsCount, :postsCountNumber
-                SQL;
-            $stmt = $pdo->prepare($sqlCommand);
-            $stmt->bindValue(':beginPostsCount', $this->beginPostsCount, PDO::PARAM_INT);
-            $stmt->bindValue(':postsCountNumber', $this->postsCountNumber, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll();
-        }
-    }
-}
-
-class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implements ISelect, ISetHttpGet
-{
-    private $tag;
-
-    public function setHttpGet($get){
-        $this->tag = $get['tag'];
-    }
-
-    public function setTotalPostsCount() {
+    private function setTotalPostsCountByTagSearchProcess () {
+        $pdo        = $this->pdo;
         $tag        = $this->tag;
         $sqlCommand = <<< 'SQL'
             SELECT COUNT( * ) FROM (
@@ -156,7 +147,6 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
                 WHERE tag_name = :tag
             ) AS is_find_tag
             SQL;
-        $pdo        = $this->pdo;
         $isFindTag  = $pdo->prepare($sqlCommand);
         $isFindTag->bindValue(':tag', $tag, PDO::PARAM_STR);
         $isFindTag->execute();
@@ -182,72 +172,33 @@ class PostsDataUsedInIndexByTagSearchProcess extends PostsDataUsedInIndex implem
         }
     }
 
-    public function selectCommand() {
-        $pdo              = $this->pdo;
-        $tag              = $this->tag;
-        $totalPostsCount  = $this->totalPostsCount;
-        $beginPostsCount  = $this->beginPostsCount;
-        $postsCountNumber = $this->postsCountNumber;
-
-        if($totalPostsCount > 0 || $totalPostsCount){
-            $sqlCommand  = <<< 'SQL'
-                SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
-                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
-                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
-                LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
-                GROUP BY posts.post_id
-                HAVING tags LIKE :tag
-                ORDER BY posts.post_id DESC LIMIT :beginPostsCount, :postsCountNumber
-                SQL;
-            $stmt        = $pdo->prepare($sqlCommand);
-            $stmt->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
-            $stmt->bindValue(':beginPostsCount', $beginPostsCount, PDO::PARAM_INT);
-            $stmt->bindValue(':postsCountNumber', $postsCountNumber, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll();
+    private function setTotalPostsCountByWordsSearchProcess () {
+        if(!$this->whereAndLikeClause){
+            return false;
         }
-    }
-}
 
-class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex implements ISelect, ISetHttpGet
-{
-    private $searchWords;
-    private $whereAndLikeClause;
+        $pdo               = $this->pdo;
+        $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts ";
+        $sqlCommand       .= $this->whereAndLikeClause;
+        $totalPostsCount   = $pdo->prepare($sqlCommand);
+        $searchWords       = $this->searchWords;
 
-    private function toArray($string) {
-        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
-        // 両サイドのスペースを消す
-        $string = trim($string);
-        // 改行、タブをスペースに変換
-        $string = preg_replace('/[\n\r\t]/', ' ', $string);
-        // 複数スペースを一つのスペースに変換
-        $string = preg_replace('/\s{2,}/', ' ', $string);
-        //文字列を配列に変換
-        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
-        $array = array_unique($array);
-        $array = array_values($array);
-        return $array;
+        for ($i = 0; $i < count($searchWords); $i++) {
+            $totalPostsCount->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
+        }
+
+        $totalPostsCount->execute();
+        $totalPostsCount       = $totalPostsCount->fetchColumn();
+        $this->totalPostsCount = intval($totalPostsCount);
     }
 
-    public function setHttpGet($get) {
-        $searchWords = $get['searchWord'];
-        $this->searchWords = $this->toArray($searchWords);
-    }
+    private function setWhereAndLikeClause () {
+        $searchWords = $this->searchWords;
 
-    public function getSearchWords() {
-        return $this->searchWords;
-    }
-
-    public function getWhereAndLikeClause() {
-        return $this->whereAndLikeClause;
-    }
-
-    public function setWhereAndLikeClause() {
-        if(!isset($this->searchWords)){
+        if(!isset($searchWords)){
             return '';
         }else{
             $whereAndLikeClause = '';
-            $searchWords        = $this->searchWords;
 
             for ($i = 0; $i < count($searchWords); $i++) {
                 if($i === 0){
@@ -270,27 +221,125 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
         }
     }
 
-    public function setTotalPostsCount() {
-        if(!$this->whereAndLikeClause){
-            return false;
-        }
-
-        $pdo               = $this->pdo;
-        $sqlCommand        = "SELECT COUNT(posts.post_id) FROM posts ";
-        $sqlCommand       .= $this->whereAndLikeClause;
-        $totalPostsCount   = $pdo->prepare($sqlCommand);
-        $searchWords       = $this->searchWords;
-
-        for ($i = 0; $i < count($searchWords); $i++) {
-            $totalPostsCount->bindValue(':'. strval($i), '%'. preg_replace('/(?=[!_%])/', '!', $searchWords[$i]) .'%', PDO::PARAM_STR);
-        }
-
-        $totalPostsCount->execute();
-        $totalPostsCount       = $totalPostsCount->fetchColumn();
-        $this->totalPostsCount = intval($totalPostsCount);
+    private function toArray (string $string) :array {
+        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
+        // 両サイドのスペースを消す
+        $string = trim($string);
+        // 改行、タブをスペースに変換
+        $string = preg_replace('/[\n\r\t]/', ' ', $string);
+        // 複数スペースを一つのスペースに変換
+        $string = preg_replace('/\s{2,}/', ' ', $string);
+        //文字列を配列に変換
+        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
+        $array = array_unique($array);
+        $array = array_values($array);
+        return $array;
     }
 
-    public function selectCommand() {
+    public function setBeginPostsCount ($beginPostsCount) {
+        $this->beginPostsCount = $beginPostsCount;
+    }
+
+    public function setPostsCountNumber ($postsCountNumber) {
+        $this->postsCountNumber = $postsCountNumber;
+    }
+
+    public function getTotalPostsCount () {
+        return $this->totalPostsCount;
+    }
+
+    public function selectCommand () {
+        if ($this->tag) {
+            return $this->selectCommandByTagSearchProcess();
+        }
+
+        if ($this->searchWords) {
+            return $this->selectCommandByWordsSearchProcess();
+        }
+
+        if (!$this->tag && !$this->searchWords) {
+            return $this->selectCommandByNormalProcess();
+        }
+    }
+
+    private function selectCommandByNormalProcess () {
+        $pdo = $this->pdo;
+
+        if($this->totalPostsCount > 0){
+            $sqlCommand = <<< 'SQL'
+                SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                GROUP BY posts.post_id
+                ORDER BY post_id DESC LIMIT :beginPostsCount, :postsCountNumber
+                SQL;
+            $stmt = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':beginPostsCount', $this->beginPostsCount, PDO::PARAM_INT);
+            $stmt->bindValue(':postsCountNumber', $this->postsCountNumber, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        }
+    }
+
+    private function selectCommandByTagSearchProcess () {
+        $pdo        = $this->pdo;
+        $tag        = $this->tag;
+        $sqlCommand = <<< 'SQL'
+            SELECT COUNT( * ) FROM (
+                SELECT tags.tag_name FROM post_tags
+                JOIN tags ON post_tags.tag_id = tags.tag_id
+                WHERE tag_name = :tag
+            ) AS is_find_tag
+            SQL;
+        $isFindTag  = $pdo->prepare($sqlCommand);
+        $isFindTag->bindValue(':tag', $tag, PDO::PARAM_STR);
+        $isFindTag->execute();
+        $isFindTag  = $isFindTag->fetchColumn();
+
+        if(!$isFindTag){
+            $this->totalPostsCount = 0;
+        } else {
+            $sqlCommand = <<< 'SQL'
+                SELECT COUNT( * ) FROM (
+                    SELECT posts.post_id, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags FROM posts
+                    LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                    LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                    GROUP BY posts.post_id
+                    HAVING tags LIKE :tag
+                ) AS tag_count
+                SQL;
+            $totalPostsCount       = $pdo->prepare($sqlCommand);
+            $totalPostsCount->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
+            $totalPostsCount->execute();
+            $totalPostsCount       = $totalPostsCount->fetchColumn();
+            $this->totalPostsCount = intval($totalPostsCount);
+        }
+
+        $totalPostsCount  = $this->totalPostsCount;
+        $beginPostsCount  = $this->beginPostsCount;
+        $postsCountNumber = $this->postsCountNumber;
+
+        if($totalPostsCount > 0 || $totalPostsCount){
+            $sqlCommand  = <<< 'SQL'
+                SELECT posts.post_id, posts.title, posts.post, posts.created_at, posts.updated_at, GROUP_CONCAT(tags.tag_name SEPARATOR ',') AS tags, user_uploaded_posts.user_id AS user_id FROM posts
+                LEFT JOIN post_tags ON posts.post_id = post_tags.post_id
+                LEFT JOIN tags ON post_tags.tag_id = tags.tag_id
+                LEFT JOIN user_uploaded_posts ON posts.post_id = user_uploaded_posts.post_id
+                GROUP BY posts.post_id
+                HAVING tags LIKE :tag
+                ORDER BY posts.post_id DESC LIMIT :beginPostsCount, :postsCountNumber
+                SQL;
+            $stmt        = $pdo->prepare($sqlCommand);
+            $stmt->bindValue(':tag', '%'. $tag. '%', PDO::PARAM_STR);
+            $stmt->bindValue(':beginPostsCount', $beginPostsCount, PDO::PARAM_INT);
+            $stmt->bindValue(':postsCountNumber', $postsCountNumber, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        }
+    }
+
+    private function selectCommandByWordsSearchProcess () {
         $pdo         = $this->pdo;
         $searchWords = $this->searchWords;
 
@@ -321,7 +370,7 @@ class PostsDataUsedInIndexByWordsSearchProcess extends PostsDataUsedInIndex impl
 /**
 * post,editで使用
 */
-class SinglePostsData extends DBConnection implements ISelect, ISetHttpGet
+class SinglePostsData extends DBConnector implements ISelect, ISetHttpGet
 {
     private $postId;
 
@@ -355,7 +404,7 @@ class SinglePostsData extends DBConnection implements ISelect, ISetHttpGet
 /**
 * newで使用
 */
-class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
+class InsertPostAndTags extends DBConnector implements IInsert, ISetHttpPost
 {
     private $title;
     private $post;
@@ -424,7 +473,7 @@ class InsertPostAndTags extends DBConnection implements IInsert, ISetHttpPost
 /**
 * editで使用
 */
-class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, ISetHttpPost, ISetSession
+class UpdatePostAndTags extends DBConnector implements IUpdate, ISetHttpGet, ISetHttpPost, ISetSession
 {
     private $title;
     private $post;
@@ -516,7 +565,7 @@ class UpdatePostAndTags extends DBConnection implements IUpdate, ISetHttpGet, IS
 /**
 * loginで使用
 */
-class UserDataUsedInLogin extends DBConnection implements ISelect, ISetHttpPost
+class UserDataUsedInLogin extends DBConnector implements ISelect, ISetHttpPost
 {
     private $email;
 
@@ -544,7 +593,7 @@ class UserDataUsedInLogin extends DBConnection implements ISelect, ISetHttpPost
 /**
 * accountで使用
 */
-abstract class UserDataUsedInAccount extends DBConnection implements ISetSession
+abstract class UserDataUsedInAccount extends DBConnector implements ISetSession
 {
     protected $userId;
     protected $updatedAt;
@@ -847,7 +896,7 @@ class UserDataUsedInAccountByPreDeactivateUserProcess extends UserDataUsedInAcco
 /**
 * deleteで使用
 */
-class UserDataUsedInDelete extends DBConnection implements ISelect, IDelete, ISetHttpGet, ISetSession
+class UserDataUsedInDelete extends DBConnector implements ISelect, IDelete, ISetHttpGet, ISetSession
 {
     private $userId;
     private $postId;
@@ -938,7 +987,7 @@ class UserDataUsedInDelete extends DBConnection implements ISelect, IDelete, ISe
 /**
 * signupで使用
 */
-class UserDataUsedInSignUp extends DBConnection implements ISelect, IInsert, IsetHttpPost
+class UserDataUsedInSignUp extends DBConnector implements ISelect, IInsert, IsetHttpPost
 {
     private $username;
     private $email;
@@ -997,7 +1046,7 @@ class UserDataUsedInSignUp extends DBConnection implements ISelect, IInsert, Ise
 /**
 * registrationで使用
 */
-class UserDataUsedInRegistration extends DBConnection implements ISelect, IInsert, IDelete, IsetHttpGet
+class UserDataUsedInRegistration extends DBConnector implements ISelect, IInsert, IDelete, IsetHttpGet
 {
     private $name;
     private $email;

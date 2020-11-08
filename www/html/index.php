@@ -38,42 +38,26 @@ if($pageID > 1){
     $beginPostsCount = 0;
 }
 
+// データベース接続
+$displayPosts = new PostsDataUsedInIndex();
+$displayPosts->setBeginPostsCount($beginPostsCount);
+$displayPosts->setPostsCountNumber($postsCountNumber);
+$result          = $displayPosts->selectCommand();
+$totalPostsCount = $displayPosts->getTotalPostsCount();
+
 // 通常処理
 if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
     $searchWord   = '';
-    $displayPosts = new PostsDataUsedInIndexByNomalProcess();
-    $displayPosts->setBeginPostsCount($beginPostsCount);
-    $displayPosts->setPostsCountNumber($postsCountNumber);
-    $displayPosts->setTotalPostsCount();
-    $result          = $displayPosts->selectCommand();
-    $totalPostsCount = $displayPosts->getTotalPostsCount();
 }
 
 // タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord   = $_GET['tag'];
-    $get          = $_GET;
-    $displayPosts = new PostsDataUsedInIndexByTagSearchProcess();
-    $displayPosts->setHttpGet($get);
-    $displayPosts->setBeginPostsCount($beginPostsCount);
-    $displayPosts->setPostsCountNumber($postsCountNumber);
-    $displayPosts->setTotalPostsCount();
-    $result          = $displayPosts->selectCommand();
-    $totalPostsCount = $displayPosts->getTotalPostsCount();
 }
 
 // 検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
     $searchWord   = $_GET['searchWord'];
-    $get          = $_GET;
-    $displayPosts = new PostsDataUsedInIndexByWordsSearchProcess();
-    $displayPosts->setHttpGet($get);
-    $displayPosts->setWhereAndLikeClause();
-    $displayPosts->setBeginPostsCount($beginPostsCount);
-    $displayPosts->setPostsCountNumber($postsCountNumber);
-    $displayPosts->setTotalPostsCount();
-    $result          = $displayPosts->selectCommand();
-    $totalPostsCount = $displayPosts->getTotalPostsCount();
 }
 
 if($totalPostsCount === 0 && $searchWord === ''){
