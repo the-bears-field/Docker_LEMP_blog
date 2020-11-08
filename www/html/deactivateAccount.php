@@ -19,8 +19,7 @@ if(!isset($_SESSION['name']) && !isset($_POST['password'])){
 }
 
 $password = $_POST['password'];
-$userData = new UserDataUsedInAccountByPreDeactivateUserProcess;
-$userData->setSession($_SESSION);
+$userData = new UserDataUsedInAccount;
 $correntHashedPassword = $userData->selectCommand();
 
 if(!password_verify($password, $correntHashedPassword)){
