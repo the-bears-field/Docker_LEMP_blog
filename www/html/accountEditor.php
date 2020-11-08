@@ -28,7 +28,7 @@ if(isset($_POST['process'])){
             $settingsInputTags = <<< HTML
                 <div class="flex-direction-row settings__input-wrapper input-wrapper">
                     <div class="input-wrapper__label">
-                        <input class="input-wrapper__input" type="text" name="username" placeholder="ユーザー名を入力" value=" $username ">
+                        <input class="input-wrapper__input" type="text" name="username" placeholder="ユーザー名を入力" value="{$username}">
                     </div>
                 </div>
                 HTML;
@@ -115,9 +115,9 @@ function settingsEditor(string $formId, string $settingsTitle, string $settingsI
                 <span class="settings__back"><i class="fas fa-arrow-left"></i></span>
                 <h1 class="settings__title">{$settingsTitle}</h1>
             </div>
-            <form id="{$formId}" class="flex-direction-column" method="post" action="accountphp">
+            <form id="{$formId}" class="flex-direction-column" method="post" action="account.php">
                 <input type="hidden" name="token" value="{$token}">
-                {$settingsInputTags}
+                $settingsInputTags
                 <button class="button button--disabled settings__button margin-top-20px" name="sending" type="submit" disabled="true">保存</button>
             </form>
         </div>
