@@ -12,10 +12,7 @@ if (!isset($_POST['posting'])) {
 }
 
 if (isset($_GET['postID'])) {
-    $get         = $_GET;
-    $postDisplay = new SinglePostsData;
-    $postDisplay->setHttpGet($get);
-    $result = $postDisplay->selectCommand();
+    $result = (new SinglePostsData)->selectCommand();
 }
 
 if (!isset($_GET['postID']) || $result['user_id'] !== $_SESSION['id']) {
@@ -26,19 +23,13 @@ if (!isset($_GET['postID']) || $result['user_id'] !== $_SESSION['id']) {
 if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
         die("不正なアクセスが行われました");
-    } else {
-        $post        = $_POST;
-        $session     = $_SESSION;
-
-        $updatePost = new UpdatePostAndTags;
-        $updatePost->setHttpGet($get);
-        $updatePost->setHttpPost($post);
-        $updatePost->setSession($session);
-        $updatePost->updateCommand();
-
-        unset($_SESSION['token']);
-        header('Location: /');
     }
+
+    $updatePost = new UpdatePostAndTags;
+    $updatePost->updateCommand();
+    unset($_SESSION['token']);
+    header('Location: /');
+    exit();
 }
 
 //画像ソート関係

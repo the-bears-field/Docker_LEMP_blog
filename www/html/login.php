@@ -30,9 +30,7 @@ if (!isset($_POST['email']) || !isset($_POST['password'])) {
     exit();
 }
 
-$post     = $_POST;
 $userData = new UserDataUsedInLogin;
-$userData->setHttpPost($post);
 $userData = $userData->selectCommand();
 
 $password = $_POST['password'];

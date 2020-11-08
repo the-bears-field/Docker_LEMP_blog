@@ -11,11 +11,7 @@ date_default_timezone_set('Asia/Tokyo');
 if (isset($_GET['postID'])) {
     //タグ一覧取得
     $tagsList = (new AllTagsData)->selectCommand();
-
-    $get         = $_GET;
-    $postDisplay = new SinglePostsData;
-    $postDisplay->setHttpGet($get);
-    $result = $postDisplay->selectCommand();
+    $result   = (new SinglePostsData)->selectCommand();
     $result['tags'] === null ? $result['tags'] = [] : $result['tags'] = explode(' ', $result['tags']);
 
     if (!$result) {

@@ -22,29 +22,14 @@ if (isset($_POST['sending'])) {
         die("不正なアクセスが行われました");
     }
 
-    $userId = $_SESSION['id'];
-    $updatedAt   = (new Datetime())->format('Y-m-d H:i:s');
-
     //ユーザー名変更
     if (isset($_POST['username']) && isset($_POST['username']) !== $_SESSION['name']) {
-        $post    = $_POST;
-        $session = $_SESSION;
-
-        $userData = new UserDataUsedInAccountByEditUserNameProcess;
-        $userData->setSession($session);
-        $userData->setHttpPost($post);
-        $userData->updateCommand();
+        $userData = (new UserDataUsedInAccount)->updateCommand();
     }
 
     //email変更
     if (isset($_POST['email']) && isset($_POST['password'])) {
-        $post    = $_POST;
-        $session = $_SESSION;
-
-        $userData = new UserDataUsedInAccountByEditEmailProcess;
-        $userData->setSession($session);
-        $userData->setHttpPost($post);
-        $userData->updateCommand();
+        $userData = (new UserDataUsedInAccount)->updateCommand();
     }
 
     //パスワード変更
@@ -52,13 +37,7 @@ if (isset($_POST['sending'])) {
      && isset($_POST['new-password'])
      && isset($_POST['password-confirmation'])
      && $_POST['new-password'] === $_POST['password-confirmation']) {
-        $post    = $_POST;
-        $session = $_SESSION;
-
-        $userData = new UserDataUsedInAccountByEditPasswordProcess;
-        $userData->setSession($session);
-        $userData->setHttpPost($post);
-        $userData->updateCommand();
+        $userData = (new UserDataUsedInAccount)->updateCommand();
     }
 
     //アカウント削除処理
@@ -86,11 +65,7 @@ if (isset($_POST['sending'])) {
             rmdir('pictures/'. $loggedInUser);
         }
 
-        $session = $_SESSION;
-
-        $userData = new UserDataUsedInAccountByDeactivateUserProcess;
-        $userData->setSession($session);
-        $userData->deleteCommand();
+        $userData = (new UserDataUsedInAccount)->deleteCommand();
 
         //ログアウト実行(セッションのリセット)
         $_SESSION = [];
@@ -106,9 +81,7 @@ if (!isset($_SESSION['id'])) {
 }
 
 if (isset($_SESSION['id'])) {
-    $userData = new UserDataUsedInAccountByNormalProcess;
-    $userData->setSession($_SESSION);
-    $stmt     = $userData->selectCommand();
+    $stmt = (new UserDataUsedInAccount)->selectCommand();
 }
 
 include_once __DIR__. '/views/accountView.php';

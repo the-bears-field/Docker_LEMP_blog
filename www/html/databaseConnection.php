@@ -24,21 +24,6 @@ interface IDelete
     public function deleteCommand();
 }
 
-interface ISetHttpGet
-{
-    public function setHttpGet($get);
-}
-
-interface ISetHttpPost
-{
-    public function setHttpPost($post);
-}
-
-interface ISetSession
-{
-    public function setSession($session);
-}
-
 abstract class DBConnector
 {
     protected $pdo;
@@ -370,12 +355,16 @@ class PostsDataUsedInIndex extends DBConnector implements ISelect
 /**
 * post,editで使用
 */
-class SinglePostsData extends DBConnector implements ISelect, ISetHttpGet
+class SinglePostsData extends DBConnector implements ISelect
 {
     private $postId;
 
-    public function setHttpGet($get) {
-        $this->postId = intval($get['postID']);
+    public function __construct() {
+        parent::__construct();
+
+        if ($_GET && isset($_GET['postID'])) {
+            $this->postId = intval($_GET['postID']);
+        }
     }
 
     public function selectCommand() {
@@ -404,34 +393,40 @@ class SinglePostsData extends DBConnector implements ISelect, ISetHttpGet
 /**
 * newで使用
 */
-class InsertPostAndTags extends DBConnector implements IInsert, ISetHttpPost
+class InsertPostAndTags extends DBConnector implements IInsert
 {
     private $title;
     private $post;
     private $tags;
     private $userId;
 
-    public function setHttpPost($post){
-        $this->title = $post['title'];
-        $this->post = $post['post'];
+    public function __construct () {
+        parent::__construct();
 
-        $tags = $post['tags'];
-        // 全角スペースを半角へ
-        $tags = preg_replace('/(\xE3\x80\x80)/', ' ', $tags);
-        // 両サイドのスペースを消す
-        $tags = trim($tags);
-        // 改行、タブをスペースに変換
-        $tags = preg_replace('/[\n\r\t]/', ' ', $tags);
-        // 複数スペースを一つのスペースに変換
-        $tags = preg_replace('/\s{2,}/', ' ', $tags);
-        $tags = preg_split('/[\s]/', $tags, -1, PREG_SPLIT_NO_EMPTY);
-        $tags = array_unique($tags);
-        $tags = array_values($tags);
-        $this->tags = $tags;
+        $this->userId = $_SESSION['id'];
+
+        if ($_POST) {
+            $this->title = $_POST['title'];
+            $this->post  = $_POST['post'];
+
+            empty($_POST['tags']) ?: $this->tags = $this->toArray($_POST['tags']);
+        }
     }
 
-    public function setUserId($userId){
-        $this->userId = $userId;
+    private function toArray (string $string) :array {
+        // 全角スペースを半角へ
+        $string = preg_replace('/(\xE3\x80\x80)/', ' ', $string);
+        // 両サイドのスペースを消す
+        $string = trim($string);
+        // 改行、タブをスペースに変換
+        $string = preg_replace('/[\n\r\t]/', ' ', $string);
+        // 複数スペースを一つのスペースに変換
+        $string = preg_replace('/\s{2,}/', ' ', $string);
+        //文字列を配列に変換
+        $array = preg_split('/[\s]/', $string, -1, PREG_SPLIT_NO_EMPTY);
+        $array = array_unique($array);
+        $array = array_values($array);
+        return $array;
     }
 
     public function insertCommand() {
@@ -473,7 +468,7 @@ class InsertPostAndTags extends DBConnector implements IInsert, ISetHttpPost
 /**
 * editで使用
 */
-class UpdatePostAndTags extends DBConnector implements IUpdate, ISetHttpGet, ISetHttpPost, ISetSession
+class UpdatePostAndTags extends DBConnector implements IUpdate
 {
     private $title;
     private $post;
@@ -486,6 +481,23 @@ class UpdatePostAndTags extends DBConnector implements IUpdate, ISetHttpGet, ISe
     public function __construct() {
         parent::__construct();
         $this->updatedAt = (new Datetime())->format('Y-m-d H:i:s');
+
+        $this->userId = $_SESSION['id'];
+
+        if ($_GET) {
+            $this->postId = $_GET['postID'];
+        }
+
+        if ($_POST) {
+            isset($_POST['tags'])         ? $updatedTags = $this->toArray($_POST['tags'])         : $updatedTags = [];
+            isset($_POST['current-tags']) ? $currentTags = $this->toArray($_POST['current-tags']) : $currentTags = [];
+            $addTags          = array_diff($updatedTags, $currentTags);
+            $removeTags       = array_diff($currentTags, $updatedTags);
+            $this->addTags    = array_values($addTags);
+            $this->removeTags = array_values($removeTags);
+            $this->title      = $_POST['title'];
+            $this->post       = $_POST['post'];
+        }
     }
 
     private function toArray($string) {
@@ -503,29 +515,15 @@ class UpdatePostAndTags extends DBConnector implements IUpdate, ISetHttpGet, ISe
         return $array;
     }
 
-    public function setHttpPost($post) {
-        $post['tags']         ? $updatedTags = $this->toArray($post['tags'])         : $updatedTags = [];
-        $post['current-tags'] ? $currentTags = $this->toArray($post['current-tags']) : $currentTags = [];
-        $addTags           = array_diff($updatedTags, $currentTags);
-        $removeTags        = array_diff($currentTags, $updatedTags);
-        $this->addTags     = array_values($addTags);
-        $this->removeTags  = array_values($removeTags);
-        $this->title       = $post['title'];
-        $this->post        = $post['post'];
-    }
-
-    public function setSession($session) {
-        $this->userId = $session['id'];
-    }
-
-    public function setHttpGet($get){
-        $this->postId = $get['postID'];
-    }
-
     public function updateCommand() {
         try{
             $pdo  = $this->pdo;
-            $stmt = $pdo->prepare('UPDATE posts SET title = :title, post = :post, updated_at = :updated_at WHERE post_id = :id');
+            $sqlCommand = <<< 'SQL'
+                UPDATE posts
+                SET title = :title, post = :post, updated_at = :updated_at
+                WHERE post_id = :id
+                SQL;
+            $stmt = $pdo->prepare($sqlCommand);
             $stmt->bindValue(':title', $this->title, PDO::PARAM_STR);
             $stmt->bindValue(':post', $this->post, PDO::PARAM_STR);
             $stmt->bindParam(':updated_at', $this->updatedAt, PDO::PARAM_STR);
@@ -565,18 +563,22 @@ class UpdatePostAndTags extends DBConnector implements IUpdate, ISetHttpGet, ISe
 /**
 * loginで使用
 */
-class UserDataUsedInLogin extends DBConnector implements ISelect, ISetHttpPost
+class UserDataUsedInLogin extends DBConnector implements ISelect
 {
     private $email;
 
-    public function setHttpPost($post) {
-        $this->email = $post['email'];
+    public function __construct () {
+        parent::__construct();
+
+        if ($_POST) {
+            $this->email = $_POST['email'];
+        }
     }
 
     public function selectCommand() {
         try {
             $pdo    = $this->pdo;
-            $stmt   = $pdo->prepare('SELECT * FROM user WHERE email = :email');
+            $stmt   = $pdo->prepare('SELECT user_id, name, email, password FROM user WHERE email = :email');
             $stmt->bindValue(':email', $this->email, PDO::PARAM_STR);
             $stmt->execute();
             $result =  $stmt->fetch(PDO::FETCH_ASSOC);
@@ -593,30 +595,47 @@ class UserDataUsedInLogin extends DBConnector implements ISelect, ISetHttpPost
 /**
 * accountで使用
 */
-abstract class UserDataUsedInAccount extends DBConnector implements ISetSession
+class UserDataUsedInAccount extends DBConnector implements ISelect, IUpdate, IDelete
 {
-    protected $userId;
-    protected $updatedAt;
+    private $userId;
+    private $updatedAt;
+    private $userName;
+    private $email;
+    private $password;
+    private $newPassword;
 
     public function __construct() {
         parent::__construct();
         $this->updatedAt = (new Datetime())->format('Y-m-d H:i:s');
+        $this->userId    = $_SESSION['id'];
+        empty($_POST['username'])         ?: $this->userName    = $_POST['username'];
+        empty($_POST['email'])            ?: $this->email       = $_POST['email'];
+        empty($_POST['password'])         ?: $this->password    = $_POST['password'];
+        empty($_POST['current-password']) ?: $this->password    = $_POST['current-password'];
+        empty($_POST['new-password'])     ?: $this->newPassword = $_POST['new-password'];
     }
 
-    public function setSession($session) {
-        $this->userId = $session['id'];
+    public function updateCommand () {
+        if (isset($_POST['username']) && isset($_POST['username']) !== $_SESSION['name']) {
+            $this->updateCommandByEditUserNameProcess();
+            return;
+        }
+
+        if (isset($_POST['email']) && isset($_POST['password'])) {
+            $this->updateCommandByEditEmailProcess();
+            return;
+        }
+
+        if (isset($_POST['current-password']) &&
+            isset($_POST['new-password']) &&
+            isset($_POST['password-confirmation']) &&
+            $_POST['new-password'] === $_POST['password-confirmation']) {
+            $this->updateCommandByEditPasswordProcess();
+            return;
+        }
     }
-}
 
-class UserDataUsedInAccountByEditUserNameProcess extends UserDataUsedInAccount implements IUpdate, ISetHttpPost
-{
-    private $userName;
-
-    public function setHttpPost($post) {
-        $this->userName = $post['username'];
-    }
-
-    public function updateCommand() {
+    private function updateCommandByEditUserNameProcess () {
         $userName   = $this->userName;
         $updatedAt  = $this->updatedAt;
         $userId     = $this->userId;
@@ -639,19 +658,8 @@ class UserDataUsedInAccountByEditUserNameProcess extends UserDataUsedInAccount i
             console.log($e);
         }
     }
-}
 
-class UserDataUsedInAccountByEditEmailProcess extends UserDataUsedInAccount implements IUpdate, ISetHttpPost
-{
-    private $email;
-    private $password;
-
-    public function setHttpPost($post) {
-        $this->email    = $post['email'];
-        $this->password = $post['password'];
-    }
-
-    public function updateCommand() {
+    private function updateCommandByEditEmailProcess () {
         $email      = $this->email;
         $password   = $this->password;
         $updatedAt  = $this->updatedAt;
@@ -691,19 +699,8 @@ class UserDataUsedInAccountByEditEmailProcess extends UserDataUsedInAccount impl
             }
         }
     }
-}
 
-class UserDataUsedInAccountByEditPasswordProcess extends UserDataUsedInAccount implements IUpdate, ISetHttpPost
-{
-    private $password;
-    private $newPassword;
-
-    public function setHttpPost($post) {
-        $this->password    = $post['current-password'];
-        $this->newPassword = $post['new-password'];
-    }
-
-    public function updateCommand() {
+    private function updateCommandByEditPasswordProcess () {
         $password    = $this->password;
         $newPassword = $this->newPassword;
         $updatedAt   = $this->updatedAt;
@@ -742,10 +739,7 @@ class UserDataUsedInAccountByEditPasswordProcess extends UserDataUsedInAccount i
             }
         }
     }
-}
 
-class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount implements IDelete
-{
     public function deleteCommand() {
         $userId     = $this->userId;
         $pdo        = $this->pdo;
@@ -859,11 +853,16 @@ class UserDataUsedInAccountByDeactivateUserProcess extends UserDataUsedInAccount
             console.log($e);
         }
     }
-}
 
-class UserDataUsedInAccountByNormalProcess extends UserDataUsedInAccount implements ISelect
-{
-    public function selectCommand() {
+    public function selectCommand () {
+        if (isset($_POST['deactivate-account'])) {
+            return $this->selectCommandByPreDeactivateUserProcess();
+        }
+
+        return $this->selectCommandByNormalProcess();
+    }
+
+    private function selectCommandByNormalProcess () {
         $pdo    = $this->pdo;
         $userId = $this->userId;
         try {
@@ -875,13 +874,11 @@ class UserDataUsedInAccountByNormalProcess extends UserDataUsedInAccount impleme
             console.log($e);
         }
     }
-}
 
-class UserDataUsedInAccountByPreDeactivateUserProcess extends UserDataUsedInAccount implements ISelect
-{
-    public function selectCommand() {
+    private function selectCommandByPreDeactivateUserProcess () {
         $pdo    = $this->pdo;
         $userId = $this->userId;
+
         try {
             $stmt   = $pdo->prepare("SELECT password FROM user WHERE user_id = :userId");
             $stmt->bindValue(":userId", $userId, PDO::PARAM_STR);
@@ -896,18 +893,16 @@ class UserDataUsedInAccountByPreDeactivateUserProcess extends UserDataUsedInAcco
 /**
 * deleteで使用
 */
-class UserDataUsedInDelete extends DBConnector implements ISelect, IDelete, ISetHttpGet, ISetSession
+class UserDataUsedInDelete extends DBConnector implements ISelect, IDelete
 {
     private $userId;
     private $postId;
     private $tags;
 
-    public function setHttpGet ($get) {
-        $this->postId = $get['postID'];
-    }
-
-    public function setSession ($session) {
-        $this->userId = $session['id'];
+    public function __construct () {
+        parent::__construct();
+        $this->userId = $_SESSION['id'];
+        empty($_GET['postID']) ?: $this->postId = $_GET['postID'];
     }
 
     public function selectCommand () {
@@ -987,16 +982,16 @@ class UserDataUsedInDelete extends DBConnector implements ISelect, IDelete, ISet
 /**
 * signupで使用
 */
-class UserDataUsedInSignUp extends DBConnector implements ISelect, IInsert, IsetHttpPost
+class UserDataUsedInSignUp extends DBConnector implements ISelect, IInsert
 {
     private $username;
     private $email;
     private $password;
 
-    public function setHttpPost ($post) {
-        $this->username = $post['username'];
-        $this->email    = $post['email'];
-        $this->password = $post['password'];
+    public function __construct () {
+        empty($_POST['username']) ?: $this->username = $_POST['username'];
+        empty($_POST['email'])    ?: $this->email    = $_POST['email'];
+        empty($_POST['password']) ?: $this->password = $_POST['password'];
     }
 
     public function setUrlToken ($urlToken) {
@@ -1046,7 +1041,7 @@ class UserDataUsedInSignUp extends DBConnector implements ISelect, IInsert, Iset
 /**
 * registrationで使用
 */
-class UserDataUsedInRegistration extends DBConnector implements ISelect, IInsert, IDelete, IsetHttpGet
+class UserDataUsedInRegistration extends DBConnector implements ISelect, IInsert, IDelete
 {
     private $name;
     private $email;
@@ -1058,10 +1053,7 @@ class UserDataUsedInRegistration extends DBConnector implements ISelect, IInsert
         parent::__construct();
         //24時間前の時刻を取得
         $this->deadlineDate = date("Y/m/d H:i:s", strtotime('-1 day'));
-    }
-
-    public function setHttpGet ($get) {
-        $this->urlToken = $get['url_token'];
+        empty($_GET['url_token']) ?: $this->urlToken = $_GET['url_token'];
     }
 
     public function getDeadlineDate () {

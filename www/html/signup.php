@@ -62,8 +62,7 @@ if (!$_POST["username"] ||
     exit();
 }
 
-$userData = new UserDataUsedInSignUp;
-$userData->setHttpPost($_POST);
+$userData       = new UserDataUsedInSignUp;
 $registeredUser = $userData->selectCommand();
 
 if($registeredUser){

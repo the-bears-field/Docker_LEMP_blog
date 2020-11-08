@@ -15,13 +15,8 @@ if (isset($_POST['posting'])) {
     if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
         die('不正なアクセスが行われました');
     }
-    $post   = $_POST;
-    $userId = $_SESSION['id'];
 
-    $InsertPost = new InsertPostAndTags();
-    $InsertPost->setHttpPost($post);
-    $InsertPost->setUserId($userId);
-    $InsertPost->insertCommand();
+    $InsertPost = (new InsertPostAndTags())->insertCommand();
     unset($_SESSION['token']);
     header('Location: /index.php');
 }

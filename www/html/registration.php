@@ -7,7 +7,6 @@ if(!isset($_GET['url_token'])){
 }
 
 $userData = new UserDataUsedInRegistration;
-$userData->setHttpGet($_GET);
 $temporaryUser = $userData->selectCommand();
 
 if(!$temporaryUser){

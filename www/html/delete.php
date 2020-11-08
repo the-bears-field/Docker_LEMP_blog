@@ -16,7 +16,6 @@ $_SESSION['token'] = $token;
 
 if (isset($_GET['postID'])) {
     $userData = new UserDataUsedInDelete;
-    $userData->setHttpGet($_GET);
     $result   = $userData->selectCommand();
     $result['tags'] === null ? $tags = [] : $tags = explode(' ', $result['tags']);
 }
@@ -30,7 +29,6 @@ if (isset($_POST['deleting'])) {
     if (!isset($_POST['token']) || $_POST['token'] === $_SESSION['token']) {
         die('不正なアクセスが行われました');
     }
-    $userData->setSession($_SESSION);
     $userData->deleteCommand();
     header('location: /');
 }
