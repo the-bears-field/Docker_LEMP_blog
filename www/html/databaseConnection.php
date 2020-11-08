@@ -78,7 +78,7 @@ class PostsDataUsedInIndex extends DBConnector implements ISelect
     public function __construct () {
         parent::__construct();
 
-        if (!$_GET) {
+        if (!$_GET || isset($_GET['pageID'])) {
             $this->setTotalPostsCountByNormalProcess();
             return;
         }
@@ -206,11 +206,11 @@ class PostsDataUsedInIndex extends DBConnector implements ISelect
         return $array;
     }
 
-    public function setBeginPostsCount ($beginPostsCount) {
+    public function setBeginPostsCount (int $beginPostsCount) {
         $this->beginPostsCount = $beginPostsCount;
     }
 
-    public function setPostsCountNumber ($postsCountNumber) {
+    public function setPostsCountNumber (int $postsCountNumber) {
         $this->postsCountNumber = $postsCountNumber;
     }
 
