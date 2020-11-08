@@ -840,7 +840,7 @@ class UserDataUsedInAccount extends DBConnector implements ISelect, IUpdate, IDe
     }
 
     public function selectCommand () {
-        if (isset($_POST['password'])) {
+        if (isset($_POST['password']) && empty($_POST['email'])) {
             return $this->selectCommandByPreDeactivateUserProcess();
         }
 
