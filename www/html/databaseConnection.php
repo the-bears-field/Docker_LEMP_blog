@@ -52,21 +52,6 @@ abstract class DBConnector
     }
 }
 
-class DBConnctorFactory
-{
-    private $path;
-
-    public function __construct () {
-        $path = pathinfo(__FILE__, PATHINFO_BASENAME);
-
-        switch ($path) {
-            case 'index.php':
-                // $dbConnector = new
-                break;
-        }
-    }
-}
-
 /**
 * indexで使用
 */
@@ -855,7 +840,7 @@ class UserDataUsedInAccount extends DBConnector implements ISelect, IUpdate, IDe
     }
 
     public function selectCommand () {
-        if (isset($_POST['deactivate-account'])) {
+        if (isset($_POST['password'])) {
             return $this->selectCommandByPreDeactivateUserProcess();
         }
 
