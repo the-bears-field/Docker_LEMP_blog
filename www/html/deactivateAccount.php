@@ -33,10 +33,10 @@ if(!password_verify($password, $correntHashedPassword)){
 $token               = sha1(uniqid(random_bytes(16), true));
 $_SESSION['token']   = $token;
 
-$messageBoxContent   = <<< 'HTML'
+$messageBoxContent   = <<< HTML
     <p class="message-box__text">アカウント削除処理を実行します。<br>この処理は取り消すことができません。</p>
     <form id="deactivate-account" name="deactivate-account" method="post" action="account.php">
-        <input type="hidden" name="token" value="'. $token. '">
+        <input type="hidden" name="token" value="{$token}">
         <input type="hidden" name="deactivate-account" value="">
     </form>
     <div class="message-box__send-links flex-direction-row">
