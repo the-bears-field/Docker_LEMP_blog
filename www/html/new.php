@@ -16,17 +16,7 @@ if (isset($_POST['posting'])) {
         die('不正なアクセスが行われました');
     }
 
-    $title  = $_POST['title'];
-    $post   = $_POST['post'];
-    $tags   = $_POST['tags'];
-    $userId = $_SESSION['id'];
-
-    $InsertPost = new InsertPostAndTags();
-    $InsertPost->setTitle($title);
-    $InsertPost->setPost($post);
-    $InsertPost->setTags($tags);
-    $InsertPost->setUserId($userId);
-    $InsertPost->insertCommand();
+    $InsertPost = (new InsertPostAndTags())->insertCommand();
     unset($_SESSION['token']);
     header('Location: /index.php');
 }

@@ -24,61 +24,47 @@ nginxのconfファイルを書き換えることで対応。
 */
 
 //タグ一覧取得
-$tagsList = (new DisplayAllTags)->selectCommand();
+$tagsList = (new AllTagsData)->selectCommand();
 
 //1ページに表示するpostの件数
-$countArticleDisplay = 10;
+$postsCountNumber = 10;
 
 isset($_GET['pageID']) ? $pageID = intval($_GET['pageID']) : $pageID = 1;
 
 //表示を開始点を定義
 if($pageID > 1){
-    $beginArticleDisplay  = ($pageID * $countArticleDisplay) - $countArticleDisplay;
+    $beginPostsCount = ($pageID * $postsCountNumber) - $postsCountNumber;
 } else {
-    $beginArticleDisplay = 0;
+    $beginPostsCount = 0;
 }
+
+// データベース接続
+$displayPosts = new PostsDataUsedInIndex();
+$displayPosts->setBeginPostsCount($beginPostsCount);
+$displayPosts->setPostsCountNumber($postsCountNumber);
+$result          = $displayPosts->selectCommand();
+$totalPostsCount = $displayPosts->getTotalPostsCount();
 
 // 通常処理
 if(!isset($_GET['searchWord']) || !isset($_GET['tag']) || $_GET['searchWord'] === '' || (isset($_GET['searchWord']) && isset($_GET['tag']))){
     $searchWord   = '';
-    $displayPosts = new DisplayPostsOnIndexByNomalProcess();
-    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPosts->setCountArticleDisplay($countArticleDisplay);
-    $displayPosts->setTotalArticleCount();
-    $result            = $displayPosts->selectCommand();
-    $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
 // タグ検索時の処理
 if(isset($_GET['tag']) && $_GET['tag'] !== '' && !isset($_GET['searchWord'])){
     $searchWord   = $_GET['tag'];
-    $displayPosts = new DisplayPostsOnIndexByTagSearchProcess();
-    $displayPosts->setTag($searchWord);
-    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPosts->setCountArticleDisplay($countArticleDisplay);
-    $displayPosts->setTotalArticleCount();
-    $result            = $displayPosts->selectCommand();
-    $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
 // 検索した時の処理
 if(isset($_GET['searchWord']) && $_GET['searchWord'] !== '' && !isset($_GET['tag'])){
     $searchWord   = $_GET['searchWord'];
-    $displayPosts = new DisplayPostsOnIndexByWordsSearchProcess();
-    $displayPosts->setSearchWords($searchWord);
-    $displayPosts->setWhereAndLikeClause();
-    $displayPosts->setBeginArticleDisplay($beginArticleDisplay);
-    $displayPosts->setCountArticleDisplay($countArticleDisplay);
-    $displayPosts->setTotalArticleCount();
-    $result            = $displayPosts->selectCommand();
-    $totalArticleCount = $displayPosts->getTotalArticleCount();
 }
 
-if($totalArticleCount === 0 && $searchWord === ''){
+if($totalPostsCount === 0 && $searchWord === ''){
     $searchResultMessage = 'まだ投稿されていません。';
     $result              = [];
     $paginatorTags       = '';
-} elseif($totalArticleCount === 0) {
+} elseif($totalPostsCount === 0) {
     $searchResultMessage = $searchWord. ' に一致する結果は見つかりませんでした。';
     $result              = [];
     $paginatorTags       = '';
@@ -86,10 +72,10 @@ if($totalArticleCount === 0 && $searchWord === ''){
     //ページネーションの処理
     //Pagerのオプションを定義
     $paginatorOptions = [
-        'totalItems'            => $totalArticleCount,
+        'totalItems'            => $totalPostsCount,
         'mode'                  => 'Sliding',
         'delta'                 => 2,
-        'perPage'               => $countArticleDisplay,
+        'perPage'               => $postsCountNumber,
         'prevImg'               => '<i class="fas fa-chevron-left"></i>',
         'nextImg'               => '<i class="fas fa-chevron-right"></i>',
         'firstPageText'         => '<i class="fas fa-chevron-double-left"></i>',

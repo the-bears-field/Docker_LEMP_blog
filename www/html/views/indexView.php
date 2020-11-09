@@ -44,7 +44,7 @@ if (basename($_SERVER['SCRIPT_NAME']) == basename(__FILE__)) {
 </header>
 <main class="main main--has-right-sidebar flex-direction-column">
     <? echo isset($searchResultMessage) ? '<article class="search-result-message">'. htmlspecialchars($searchResultMessage). '</article>' : null; ?>
-    <? echo isset($searchResultMessage) && $totalArticleCount !== 0 ? '<article class="search-result-message">検索結果: '. htmlspecialchars($totalArticleCount). '件見つかりました。</article>' : null; ?>
+    <? echo isset($searchResultMessage) && $totalPostsCount !== 0 ? '<article class="search-result-message">検索結果: '. htmlspecialchars($totalPostsCount). '件見つかりました。</article>' : null; ?>
     <? foreach($result as $post) : ?>
     <div class="main__posts posts">
         <article class="posts__content flex-direction-column">
@@ -110,7 +110,7 @@ if (basename($_SERVER['SCRIPT_NAME']) == basename(__FILE__)) {
         <h2 class="sidebar__caption">タグ一覧</h2>
         <div class="sidebar__tags">
             <? foreach($tagsList as $tag) : ?>
-            <a class="sidebar__tags-item" href="/?tag=<? echo $tag?>"><? echo $tag; ?></a>
+            <a class="sidebar__tags-item" href="/?tag=<? echo htmlspecialchars($tag, ENT_QUOTES); ?>"><? echo htmlspecialchars($tag, ENT_QUOTES); ?></a>
             <? endforeach ?>
         </div>
     </div>
