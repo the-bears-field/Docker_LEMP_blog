@@ -37,6 +37,7 @@
 $ git clone https://github.com/the-bears-field/Docker_LEMP_blog
 $ cd Docker_LEMP_blog
 $ docker-compose build --no-cache
+$ docker-compose run --rm --no-deps php npm install
 $ docker-compose up -d
 
 # CLIENT_URLは、http://localhost:8080です。
