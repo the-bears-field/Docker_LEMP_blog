@@ -47,7 +47,7 @@ docker-compose build --no-cache
 docker-compose run --rm --no-deps php npm install
 ```
 ```
-$ docker-compose up -d
+docker-compose up -d
 ```
 CLIENT_URLは、http://localhost:8080です。
 
