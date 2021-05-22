@@ -32,22 +32,32 @@
 - Git version 2.21.0(ブランチモデルとしてGit-Flowを採用)
 
 ## インストール
+必要要件に記載している環境を整えた上で、ターミナルで下記コマンドを実行して下さい。
 
 ```
-$ git clone https://github.com/the-bears-field/Docker_LEMP_blog
-$ cd Docker_LEMP_blog
-$ docker-compose build --no-cache
-$ docker-compose run --rm --no-deps php npm install
+git clone https://github.com/the-bears-field/Docker_LEMP_blog
+```
+```
+cd Docker_LEMP_blog
+```
+```
+docker-compose build --no-cache
+```
+```
+docker-compose run --rm --no-deps php npm install
+```
+```
 $ docker-compose up -d
-
-# CLIENT_URLは、http://localhost:8080です。
 ```
+CLIENT_URLは、http://localhost:8080です。
 
 ## テスト用アカウント情報
-```
-mail: test@example.com
-password: 12345678
-```
+<dl>
+  <dt>mail</dt>
+  <dd><div class="snippet-clipboard-content position-relative"><pre><code>test@example.com</code></pre></div></dd>
+  <dt>password</dt>
+  <dd><div class="snippet-clipboard-content position-relative"><pre><code>12345678</code></pre></div></dd>
+</dl>
 
 ## 開発機材
 MacBook Pro (Retina, 15-inch, Late 2013) US Keyboard
