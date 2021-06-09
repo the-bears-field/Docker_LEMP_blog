@@ -38,7 +38,7 @@
 git clone https://github.com/the-bears-field/Docker_LEMP_blog
 ```
 ```
-cd Docker_LEMP_blog
+cd Docker_LEMP_blog && cp www/html/.env.example www/html/.env
 ```
 ```
 docker-compose build --no-cache
